@@ -1,0 +1,42 @@
+header_include_path: voronoi_planner/voronoi_planner.hpp
+namespace: VoronoiPlanner
+node_class_name: VoronoiPlannerNode
+
+params:
+  axis_max_val:
+    type: double
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 100000
+    step: 1.0
+    description: "Maximum value produced by voronoi_planner."
+    constraints: "Can be changed."
+    read_only: false
+    var_name: axis_max_val
+
+  axis_deadzone_val:
+    type: integer
+    default_value: 100
+    min_value: 0
+    max_value: 100000
+    step: 1
+    description: "Deadzone value on axes."
+    constraints: "Can be changed."
+    read_only: false
+    var_name: axis_deadzone_val
+
+  joy_topic_name:
+    type: string
+    default_value: /joy_topic
+    description: "Topic to be published on."
+    constraints: "Cannot be changed."
+    read_only: true
+    var_name: joy_topic_name
+
+  joy_path:
+    type: string
+    default_value: /dev/input
+    description: "VoronoiPlanner device name."
+    constraints: "Cannot be changed."
+    read_only: true
+    var_name: joy_path

@@ -1,0 +1,7 @@
+/voronoi_planner:
+  ros__parameters:
+    axis_max_val: 32767.0
+    axis_deadzone_val: 300
+    invert_y: true
+    joy_topic_name: /voronoi_planner
+    joy_path : /dev/input/js0
