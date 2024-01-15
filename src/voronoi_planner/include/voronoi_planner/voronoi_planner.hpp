@@ -33,6 +33,7 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdexcept>
 
 #include <dua_node/dua_node.hpp>
 
@@ -71,23 +72,22 @@ using namespace std::chrono_literals;
 using namespace rcl_interfaces::msg;
 
 typedef Eigen::Vector2d Point;
+typedef std::vector<Point> Polygon;
+typedef std::vector<Polygon> Polygons;
 
 #define UNUSED(arg) (void)(arg)
+
+#define EPSILON 1e-6
+
+#define LINE std::cout<<__LINE__<<std::endl;
 
 namespace VoronoiPlanner
 {
 
-bool isIntersecting(std::vector<Point>& line1, std::vector<Point>& line2);
-int counter_clockwise(Point& point1, Point& point2, Point& point3);
-template<typename T>
-int find_closest(std::vector<T> vec, T elem);
-double radian(Eigen::Vector2d& v1, Eigen::Vector2d& v2);
-double distance_between_line_point(std::vector<Point>& line, Point& point);
-double total_distance(std::vector<Point>& path);
-
 class Line
 {
 public:
+  Line();
   Line(std::vector<Point> inputPoints);
   std::vector<Point> generateLine();
   bool isIntersectingClass(Line& otherLine);
@@ -106,6 +106,7 @@ class Triangle : public Line
 public:
   Triangle(std::vector<Point> inputPoints);
   std::vector<Point> generateLine();
+  std::vector<Point> get_points() { return points; }
 
 private:
   double distance_tresh;
@@ -114,6 +115,30 @@ private:
   bool test_distance_tresh(std::vector<Point>& points, Point& test_point, double distance_trash);
   bool test_point_convex(std::vector<Point>& points, Point& test_point);
 };
+
+// Geometry
+bool isIntersecting(std::vector<Point>& line1, std::vector<Point>& line2);
+int counter_clockwise(Point& point1, Point& point2, Point& point3);
+template<typename T>
+int find_closest(std::vector<T> vec, T elem);
+double radian(Eigen::Vector2d& v1, Eigen::Vector2d& v2);
+double distance_between_line_point(std::vector<Point>& line, Point& point);
+double total_distance(std::vector<Point>& path);
+
+//RDP
+double PerpendicularDistance(Point &pt, Point &lineStart, Point &lineEnd);
+void RamerDouglasPeucker(std::vector<Point> &pointList, double epsilon, std::vector<Point> &out);
+
+// Tricpp
+bool isClockwise(Polygon& polygon);
+double triangleSum(double x1, double y1, double x2, double y2, double x3, double y3);
+bool isConvex(Point& prev, Point& point, Point& next);
+double triangleArea(Point& p1, Point& p2, Point& p3);
+bool isPointInside(Point& p, Point& a, Point& b, Point& c);
+bool containsNoPoints(Point& p1, Point& p2, Point& p3, Polygon& polygon);
+bool isEar(Point& p1, Point& p2, Point& p3, Polygon& polygon);
+void earclip(Polygon& polygon, std::vector<Triangle>& triangles);
+double calculateTotalArea(std::vector<Triangle>& triangles);
 
 /**
  * Convert messages and transform data

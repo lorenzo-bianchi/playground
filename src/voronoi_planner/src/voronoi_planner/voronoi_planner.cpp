@@ -72,6 +72,23 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //////////////////////////
   //////////////////////////
 
+  Polygons polys = {
+                    {{0.08, 0.08}, {0.08, 0.3}, {0.3, 0.3}, {0.3, 0.08}},
+                    {{0.3, 0.5}, {0.35, 0.55}, {0.3, 0.6}, {0.45, 0.65}, {0.5, 0.5}, {0.4, 0.45}, {0.4, 0.4}},
+                   };
+  Polygon poly = polys[1];
+  std::vector<Triangle> triangles = {};
+  earclip(poly, triangles);
+
+  // print triangles
+  for (Triangle & t : triangles)
+  {
+    auto points = t.get_points();
+    std::cout << points[0][0] << " " << points[0][1] << "\t"
+              << points[1][0] << " " << points[1][1] << "\t"
+              << points[2][0] << " " << points[2][1] << std::endl;
+  }
+
   RCLCPP_INFO(this->get_logger(), "Node initialized");
 }
 
@@ -100,4 +117,7 @@ void VoronoiPlannerNode::init_publishers()
   //   joy_topic_name,
   //   rclcpp::QoS(1));
 }
-}
+} // namespace VoronoiPlanner
+
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(VoronoiPlanner::VoronoiPlannerNode)

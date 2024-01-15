@@ -34,40 +34,57 @@ generate_init_parameters(
   YAML_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/voronoi_planner/params.yaml"
   OUT_FILE "init_parameters.cpp")
 
-add_executable(voronoi_planner
-  src/voronoi_planner/voronoi_planner.cpp
-  src/voronoi_planner/voronoi_planner_utils.cpp
-  init_parameters.cpp
-  src/voronoi_planner_app.cpp)
+# Configure Voronoi Planner node source files
+file(GLOB VORONOI_PLANNER_NODE_SRCS
+  RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+  "src/voronoi_planner/*.cpp")
+list(APPEND VORONOI_PLANNER_NODE_SRCS init_parameters.cpp)
 
+# Voronoi Planner node
+add_library(voronoi_planner SHARED ${VORONOI_PLANNER_NODE_SRCS})
+target_compile_definitions(voronoi_planner PRIVATE COMPOSITION_BUILDING_DLL)
+target_include_directories(voronoi_planner PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
 target_link_libraries(voronoi_planner
   Eigen3::Eigen
   qhullcpp
   qhull_r)
-
-target_include_directories(voronoi_planner PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-
-ament_target_dependencies(
-  voronoi_planner
+ament_target_dependencies(voronoi_planner
   dua_app_management
   dua_node
   dua_qos
-  Eigen3
   params_manager
   rclcpp
   rclcpp_components)
+rclcpp_components_register_nodes(voronoi_planner "VoronoiPlanner::VoronoiPlannerNode")
 
-# voronoi_planner app
+# Voronoi Planner standalone application
+add_executable(voronoi_planner_app
+  src/voronoi_planner_app.cpp)
+target_include_directories(voronoi_planner_app PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_link_libraries(voronoi_planner_app voronoi_planner)
+ament_target_dependencies(voronoi_planner_app
+  dua_app_management
+  rclcpp)
+
+# Install Voronoi Planner component
 install(TARGETS voronoi_planner
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin)
+
+# Install Voronoi Planner app
+install(TARGETS voronoi_planner_app
   DESTINATION lib/${PROJECT_NAME})
 
-# Config files
+# Install Config files
 install(DIRECTORY config
   DESTINATION share/${PROJECT_NAME})
 
-# Launch files
+# Install Launch files
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
 
@@ -81,5 +98,8 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+# Make sure that the library path is exported even if the library itself is not
+ament_environment_hooks("${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}")
 
 ament_package()
