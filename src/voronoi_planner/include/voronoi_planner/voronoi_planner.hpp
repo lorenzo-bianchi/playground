@@ -27,26 +27,24 @@
 #ifndef VORONOI_PLANNER_HPP
 #define VORONOI_PLANNER_HPP
 
+#include <algorithm>
 #include <atomic>
 #include <cfloat>
 #include <chrono>
-#include <cstdio>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdexcept>
-
-#include <dua_node/dua_node.hpp>
-
-#include <rclcpp/rclcpp.hpp>
-
-#include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <deque>
+#include <Eigen/Dense>
+#include <fcntl.h>
 #include <iostream>
 #include <ostream>
+#include <unistd.h>
+#include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
-#include <Eigen/Dense>
+#include <dua_node/dua_node.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include "libqhullcpp/RboxPoints.h"
 #include "libqhullcpp/QhullError.h"
@@ -58,6 +56,10 @@
 #include "libqhullcpp/Qhull.h"
 
 #include "libqhull_r/libqhull_r.h"
+
+#define UNUSED(arg) (void)(arg)
+#define EPSILON 1e-6
+#define LINE std::cout<<__LINE__<<std::endl;
 
 using orgQhull::Qhull;
 using orgQhull::QhullError;
@@ -74,15 +76,26 @@ using namespace rcl_interfaces::msg;
 typedef Eigen::Vector2d Point;
 typedef std::vector<Point> Polygon;
 typedef std::vector<Polygon> Polygons;
-
-#define UNUSED(arg) (void)(arg)
-
-#define EPSILON 1e-6
-
-#define LINE std::cout<<__LINE__<<std::endl;
+typedef uint NodeT;
+typedef std::vector<NodeT> Chain;
+typedef std::vector<Chain> Chains;
+typedef Eigen::Matrix<NodeT, 2, 1> ChainIdx;
+typedef std::deque<ChainIdx> ChainStart;
+typedef Eigen::Matrix<NodeT, 2, 1> RidgeVertex;
+typedef std::vector<RidgeVertex> RidgeVertices;
+typedef std::unordered_map<NodeT, Chain> DictT;
+typedef std::vector<Point> VertexChain;
+typedef std::vector<VertexChain> VertexChains;
 
 namespace VoronoiPlanner
 {
+
+enum run_type {
+  // non_lined = 0,
+  // non_deleted = 1,
+  non_optimized = 2,
+  optimized = 3
+};
 
 class Line
 {
@@ -91,6 +104,7 @@ public:
   Line(std::vector<Point> inputPoints);
   std::vector<Point> generateLine();
   bool isIntersectingClass(Line& otherLine);
+  std::vector<Point> get_points() { return points; }
 
 protected:
   double point_distance;
@@ -106,39 +120,124 @@ class Triangle : public Line
 public:
   Triangle(std::vector<Point> inputPoints);
   std::vector<Point> generateLine();
-  std::vector<Point> get_points() { return points; }
+  bool is_in_polygon(Point& point);
 
 private:
   double distance_tresh;
 
-  bool is_in_polygon(Point& point);
   bool test_distance_tresh(std::vector<Point>& points, Point& test_point, double distance_trash);
   bool test_point_convex(std::vector<Point>& points, Point& test_point);
 };
 
+struct Result {
+  std::vector<Triangle> triangles;
+  std::vector<Line> boundaries;
+  std::vector<Point> points;
+  std::vector<Point> points_polygon;
+  VertexChain vertices;
+  RidgeVertices ridge_vertices;
+  Chains chains;
+};
+
+class IndexDict
+{
+public:
+  IndexDict(RidgeVertices& vec);
+  void insert(NodeT key, Chain& value);
+  bool contains(NodeT key);
+  Chain find(NodeT key);
+  std::vector<std::pair<NodeT, Chain>> items();
+
+private:
+  DictT dict;
+
+  bool contains(DictT& dict, NodeT key);
+  DictT generate(RidgeVertices& vec, bool reverse);
+};
+
+class GeneralizedVoronoi
+{
+public:
+  GeneralizedVoronoi();
+  void add_point(Point& point);
+  void add_points(std::vector<Point>& new_points);
+  void add_line(Line& line);
+  void add_lines(std::vector<Line>& new_lines);
+  void add_triangle(Triangle& triangle);
+  void add_triangles(std::vector<Triangle>& new_triangles);
+  void add_boundary(Line& boundary);
+  void add_boundaries(std::vector<Line>& new_boundaries);
+  void add_polygon(Polygon& polygon);
+  void add_polygons(Polygons& polygons);
+  bool optimize_line();
+  void run(run_type type, bool plot, Result& result);
+  void run_non_optimized(const bool generate_result, Result& result);
+  void run_optimized(Result& result);
+
+private:
+  float rdp_epsilon;
+
+  std::vector<Point> points;
+  std::vector<Line> lines;
+  std::vector<Triangle> triangles;
+  std::vector<Line> boundaries;
+
+  std::vector<Point> triangle_points;
+  std::vector<Point> boundary_points;
+  std::vector<Point> line_points;
+
+  std::vector<Point> triangle_lined_points;
+  std::vector<Point> boundary_lined_points;
+  std::vector<Point> line_lined_points;
+
+  Chains chains;
+
+  Result vor;
+
+  void run_voronoi(std::vector<Point>& points);
+  void generate_result(Result& result);
+  Chains generate_chains();
+  Chain generate_chain(IndexDict& dict, ChainStart& start, Chain& feature);
+  ChainStart chain(IndexDict& dict, ChainIdx& idx, Chain& chain, Chain& feature);
+  VertexChains generate_vertex_chains(Chains& chains);
+  VertexChains optimize_line_base(VertexChains& chains);
+  void regenerate_voronoi(VertexChains& chains);
+
+  void delete_unfinished();
+  Chain unfinished_vertices();
+  Chain ridges_to_delete(Chain& vertex_vec);
+  void delete_vertex(Chain& to_delete);
+  void delete_ridge(Chain& to_delete);
+  void reorganize_ridge(Chain& deleted_vertices);
+  Chain vertices_in_polygon();
+};
+
+///////////////////////////////////
+
 // Geometry
-bool isIntersecting(std::vector<Point>& line1, std::vector<Point>& line2);
 int counter_clockwise(Point& point1, Point& point2, Point& point3);
+double distance_between_line_point(std::vector<Point>& line, Point& point);
 template<typename T>
 int find_closest(std::vector<T> vec, T elem);
+bool isIntersecting(std::vector<Point>& line1, std::vector<Point>& line2);
 double radian(Eigen::Vector2d& v1, Eigen::Vector2d& v2);
-double distance_between_line_point(std::vector<Point>& line, Point& point);
 double total_distance(std::vector<Point>& path);
+std::vector<Triangle> triangulation(Polygon& polygon);
 
 //RDP
-double PerpendicularDistance(Point &pt, Point &lineStart, Point &lineEnd);
-void RamerDouglasPeucker(std::vector<Point> &pointList, double epsilon, std::vector<Point> &out);
+double PerpendicularDistance(Point& pt, Point& lineStart, Point& lineEnd);
+void RamerDouglasPeucker(VertexChain& pointList, double epsilon, VertexChain& out);
 
 // Tricpp
-bool isClockwise(Polygon& polygon);
-double triangleSum(double x1, double y1, double x2, double y2, double x3, double y3);
-bool isConvex(Point& prev, Point& point, Point& next);
-double triangleArea(Point& p1, Point& p2, Point& p3);
-bool isPointInside(Point& p, Point& a, Point& b, Point& c);
-bool containsNoPoints(Point& p1, Point& p2, Point& p3, Polygon& polygon);
-bool isEar(Point& p1, Point& p2, Point& p3, Polygon& polygon);
-void earclip(Polygon& polygon, std::vector<Triangle>& triangles);
 double calculateTotalArea(std::vector<Triangle>& triangles);
+bool containsNoPoints(Point& p1, Point& p2, Point& p3, Polygon& polygon);
+void earclip(Polygon& polygon, std::vector<Triangle>& triangles);
+bool isClockwise(Polygon& polygon);
+bool isConvex(Point& prev, Point& point, Point& next);
+bool isEar(Point& p1, Point& p2, Point& p3, Polygon& polygon);
+bool isPointInside(Point& p, Point& a, Point& b, Point& c);
+double triangleArea(Point& p1, Point& p2, Point& p3);
+double triangleSum(double x1, double y1, double x2, double y2, double x3, double y3);
 
 /**
  * Convert messages and transform data

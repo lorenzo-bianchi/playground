@@ -29,7 +29,7 @@
 namespace VoronoiPlanner
 {
   /*  */
-  double PerpendicularDistance(Point &pt, Point &lineStart, Point &lineEnd)
+  double PerpendicularDistance(Point& pt, Point& lineStart, Point& lineEnd)
   {
     Eigen::Vector2d dx = lineEnd - lineStart;
     dx.normalize();
@@ -49,9 +49,7 @@ namespace VoronoiPlanner
   }
 
   /*  */
-  void RamerDouglasPeucker(std::vector<Point> &pointList,
-                           double epsilon,
-                           std::vector<Point> &out)
+  void RamerDouglasPeucker(VertexChain& pointList, double epsilon, VertexChain& out)
   {
     if (pointList.size() < 2) throw std::invalid_argument("Not enough points to simplify");
 
@@ -73,10 +71,10 @@ namespace VoronoiPlanner
     if (dmax > epsilon)
     {
       // Recursive call
-      std::vector<Point> recResults1;
-      std::vector<Point> recResults2;
-      std::vector<Point> firstLine(pointList.begin(), pointList.begin()+index+1);
-      std::vector<Point> lastLine(pointList.begin()+index, pointList.end());
+      VertexChain recResults1;
+      VertexChain recResults2;
+      VertexChain firstLine(pointList.begin(), pointList.begin()+index+1);
+      VertexChain lastLine(pointList.begin()+index, pointList.end());
       RamerDouglasPeucker(firstLine, epsilon, recResults1);
       RamerDouglasPeucker(lastLine, epsilon, recResults2);
 

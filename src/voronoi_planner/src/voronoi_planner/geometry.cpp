@@ -1,5 +1,5 @@
 /**
- * VoronoiPlanner - Geometry.py implementation.
+ * VoronoiPlanner - geometry.py implementation.
  *
  * Lorenzo Bianchi <lnz.bnc@gmail.com>
  * Roberto Masocco <robmasocco@gmail.com>
@@ -33,7 +33,7 @@ namespace VoronoiPlanner
   double total_distance(std::vector<Point>& path)
   {
     double dist = 0.0;
-    for (long unsigned int i = 0; i < path.size() - 1; i++)
+    for (size_t i = 0; i < path.size() - 1; i++)
     {
       dist += (path[i] - path[i + 1]).norm();
     }
@@ -135,6 +135,14 @@ namespace VoronoiPlanner
     return false;
   }
 
+  /*  */
+  std::vector<Triangle> triangulation(Polygon& polygon)
+  {
+    std::vector<Triangle> triangles = {};
+    earclip(polygon, triangles);
+    return triangles;
+  }
+
   // Line class implementation
   /*  */
   Line::Line() : point_distance(0.0) {}
@@ -223,7 +231,7 @@ namespace VoronoiPlanner
     std::vector<Point> result;
 
     // loop for every line in Triangle
-    for (long unsigned int i = 0; i < points.size(); i++)
+    for (size_t i = 0; i < points.size(); i++)
     {
       Point p1 = points[i];
       Point p2 = points[i + 1 < points.size() ? i + 1 : 0];
@@ -252,7 +260,7 @@ namespace VoronoiPlanner
     Point& test_point,
     double distance_trash)
   {
-    for (long unsigned int i = 0; i < points.size(); i++)
+    for (size_t i = 0; i < points.size(); i++)
     {
       double dist = (test_point - points[i]).norm();
       if (dist < distance_trash)
@@ -266,7 +274,7 @@ namespace VoronoiPlanner
   /*  */
   bool Triangle::test_point_convex(std::vector<Point>& points, Point& test_point)
   {
-    for (long unsigned int i = 0; i < 3; i++)
+    for (size_t i = 0; i < 3; i++)
     {
       bool ccw1 = counter_clockwise(points[i], points[(i + 1) % 3], test_point);
       bool ccw2 = counter_clockwise(points[i], test_point, points[(i + 2) % 3]);
@@ -276,14 +284,6 @@ namespace VoronoiPlanner
       }
     }
     return true;
-  }
-
-  /*  */
-  std::vector<Triangle> triangulation(Polygon& polygon)
-  {
-    std::vector<Triangle> triangles = {};
-    earclip(polygon, triangles);
-    return triangles;
   }
 
 } // namespace VoronoiPlanner
