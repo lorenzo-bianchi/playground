@@ -1,0 +1,52 @@
+run OK
+    run_optimized OK
+        run_non_optimized OK
+            run_voronoi OK
+                Voronoi (scipy)
+            vertices_in_polygon OK
+                tri.is_in_polygon (geometry) OK
+                    test_distance_trash OK
+                        distance OK
+                            length ---
+                    test_point_convex OK
+                        counter_clockwise ---
+            ridges_to_delete OK
+                line.is_intersecting OK
+                    is_intersecting OK
+                        counter_clockwise ---
+            delete_vertex ---
+            delete_ridge ---
+            reorganize_ridge OK
+                find_closest (geometry) ---
+            generate_result ---
+        optimize_line OK
+            generate_chains OK
+                IndexDict ---
+                IndexDict.items ---
+                generate_chain OK
+                    chain OK
+                        IndexDict.find ---
+                        chain REC
+            generate_vertex_chains ---
+            optimize_line_base OK
+                rdp (rdp)
+            regenerate_voronoi ---
+        delete_unfinished OK
+            generate_chains OK
+                IndexDict ---
+                IndexDict.items ---
+                generate_chain OK
+                    chain OK
+                        IndexDict.find ---
+                        chain REC
+            unfinished_vertices OK
+                IndexDict ---
+            ridges_to_delete OK
+                line.is_intersecting OK
+                    is_intersecting OK
+                        counter_clockwise ---
+            delete_vertex ---
+            delete_ridge ---
+            reorganize_ridge OK
+                find_closest (geometry) ---
+    generate_result ---

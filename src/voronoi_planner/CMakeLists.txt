@@ -28,6 +28,7 @@ find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 find_package(params_manager REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 
 # Generate parameters source code
 generate_init_parameters(
@@ -49,7 +50,9 @@ target_include_directories(voronoi_planner PUBLIC
 target_link_libraries(voronoi_planner
   Eigen3::Eigen
   qhullcpp
-  qhull_r)
+  qhull_r
+  Python3::Python
+  Python3::Module)
 ament_target_dependencies(voronoi_planner
   dua_app_management
   dua_node

@@ -3,40 +3,35 @@ namespace: VoronoiPlanner
 node_class_name: VoronoiPlannerNode
 
 params:
-  axis_max_val:
+  distance_tresh:
     type: double
     default_value: 0.0
     min_value: 0.0
     max_value: 100000
-    step: 1.0
-    description: "Maximum value produced by voronoi_planner."
+    step: 0.0
+    description: "Distance threshold in class Triangle."
     constraints: "Can be changed."
     read_only: false
-    var_name: axis_max_val
+    var_name: distance_tresh_
 
-  axis_deadzone_val:
-    type: integer
-    default_value: 100
-    min_value: 0
+  point_distance:
+    type: double
+    default_value: 0.0
+    min_value: 0.0
     max_value: 100000
-    step: 1
-    description: "Deadzone value on axes."
+    step: 0.0
+    description: "Point distance in class Line."
     constraints: "Can be changed."
     read_only: false
-    var_name: axis_deadzone_val
+    var_name: point_distance_
 
-  joy_topic_name:
-    type: string
-    default_value: /joy_topic
-    description: "Topic to be published on."
-    constraints: "Cannot be changed."
-    read_only: true
-    var_name: joy_topic_name
-
-  joy_path:
-    type: string
-    default_value: /dev/input
-    description: "VoronoiPlanner device name."
-    constraints: "Cannot be changed."
-    read_only: true
-    var_name: joy_path
+  rdp_epsilon:
+    type: double
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 100000
+    step: 0.0
+    description: "RDP epsilon in class GeneralizedVoronoi."
+    constraints: "Can be changed."
+    read_only: false
+    var_name: rdp_epsilon_

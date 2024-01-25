@@ -40,7 +40,7 @@ def generate_launch_description():
     node = Node(
         package='voronoi_planner',
         executable='voronoi_planner_app',
-        shell=True,
+        shell=False,
         emulate_tty=True,
         output='both',
         log_cmd=True,

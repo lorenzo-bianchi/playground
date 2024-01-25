@@ -43,6 +43,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <fstream>
+
 #include <dua_node/dua_node.hpp>
 #include <rclcpp/rclcpp.hpp>
 
@@ -57,9 +59,11 @@
 
 #include "libqhull_r/libqhull_r.h"
 
+#include "matplotlibcpp.h"
+
 #define UNUSED(arg) (void)(arg)
 #define EPSILON 1e-6
-#define LINE std::cout<<__LINE__<<std::endl;
+#define LINE std::cout << __FUNCTION__ << ", LINE: " << __LINE__ << std::endl;
 
 using orgQhull::Qhull;
 using orgQhull::QhullError;
@@ -73,10 +77,12 @@ using orgQhull::QhullVertexSet;
 using namespace std::chrono_literals;
 using namespace rcl_interfaces::msg;
 
+namespace plt = matplotlibcpp;
+
 typedef Eigen::Vector2d Point;
 typedef std::vector<Point> Polygon;
 typedef std::vector<Polygon> Polygons;
-typedef uint NodeT;
+typedef int NodeT;
 typedef std::vector<NodeT> Chain;
 typedef std::vector<Chain> Chains;
 typedef Eigen::Matrix<NodeT, 2, 1> ChainIdx;
@@ -102,16 +108,17 @@ class Line
 public:
   Line();
   Line(std::vector<Point> inputPoints);
-  std::vector<Point> generateLine();
-  bool isIntersectingClass(Line& otherLine);
+  std::vector<Point> generate_line();
+  bool is_intersecting_class(Line& otherLine);
   std::vector<Point> get_points() { return points; }
+  void set_point_distance(double distance) { point_distance = distance; }
 
 protected:
   double point_distance;
   std::vector<Point> points;
 
-  std::vector<Point> generateLineBase(Point& point1, Point& point2);
-  std::vector<Point> generateLineBase(Point& point1, Point& point2, int axis);
+  std::vector<Point> generate_line_base(Point& point1, Point& point2);
+  std::vector<Point> generate_line_base(Point& point1, Point& point2, int axis);
   double distance(Point& point1, Point& point2);
 };
 
@@ -119,17 +126,18 @@ class Triangle : public Line
 {
 public:
   Triangle(std::vector<Point> inputPoints);
-  std::vector<Point> generateLine();
+  std::vector<Point> generate_line();
   bool is_in_polygon(Point& point);
+  void set_distance_tresh(double distance) { distance_tresh = distance; }
 
 private:
   double distance_tresh;
-
   bool test_distance_tresh(std::vector<Point>& points, Point& test_point, double distance_trash);
   bool test_point_convex(std::vector<Point>& points, Point& test_point);
 };
 
-struct Result {
+struct Result
+{
   std::vector<Triangle> triangles;
   std::vector<Line> boundaries;
   std::vector<Point> points;
@@ -155,6 +163,61 @@ private:
   DictT generate(RidgeVertices& vec, bool reverse);
 };
 
+class Qhull
+{
+public:
+  Qhull(std::string flags, std::vector<Point> points);
+  ~Qhull();
+  RidgeVertices ridge_vertices;
+  std::vector<Point> get_points();
+  void get_voronoi_diagram(VertexChain& vor_vertices,
+                           std::vector<Eigen::Matrix<NodeT, 2, 1>>& vor_ridge_points,
+                           RidgeVertices& vor_ridge_vertices,
+                           Chains& vor_regions,
+                           std::vector<NodeT>& vor_point_region);
+  int get_nridges() { return nridges; }
+  void set_nridges(int n) { nridges = n; }
+  std::vector<Eigen::Matrix<NodeT, 2, 1>> get_ridge_points() { return ridge_points; }
+  std::vector<Eigen::Matrix<NodeT, 2, 1>> ridge_points;
+
+private:
+  qhT* qh;
+  int ndim;
+  int numpoints;
+  std::vector<std::vector<Point>> point_arrays;
+  int nridges;
+
+  void check_active();
+  void close();
+};
+
+class Voronoi
+{
+public:
+  Voronoi() {}
+  Voronoi(std::vector<Point> points);
+
+  qhT* qh;
+
+  std::vector<Triangle> triangles;
+  std::vector<Line> boundaries;
+  std::vector<Point> points_polygon;
+  Chains chains;
+
+  VertexChain vertices;
+  std::vector<Eigen::Matrix<NodeT, 2, 1>> ridge_points;
+  RidgeVertices ridge_vertices;
+  Chains regions;
+  std::vector<NodeT> point_region;
+  std::vector<Point> points;
+  int ndim;
+  int npoints;
+  Eigen::Vector2d min_bound;
+  Eigen::Vector2d max_bound;
+
+private:
+};
+
 class GeneralizedVoronoi
 {
 public:
@@ -173,6 +236,23 @@ public:
   void run(run_type type, bool plot, Result& result);
   void run_non_optimized(const bool generate_result, Result& result);
   void run_optimized(Result& result);
+    void generate_plot();
+  // get functions
+  std::vector<Point> get_points() { return points; }
+  std::vector<Line> get_lines() { return lines; }
+  std::vector<Triangle> get_triangles() { return triangles; }
+  std::vector<Line> get_boundaries() { return boundaries; }
+  std::vector<Point> get_triangle_points() { return triangle_points; }
+  std::vector<Point> get_boundary_points() { return boundary_points; }
+  std::vector<Point> get_line_points() { return line_points; }
+  std::vector<Point> get_triangle_lined_points() { return triangle_lined_points; }
+  std::vector<Point> get_boundary_lined_points() { return boundary_lined_points; }
+  std::vector<Point> get_line_lined_points() { return line_lined_points; }
+  Chains get_chains() { return chains; }
+  Voronoi get_vor() { return vor; }
+
+  // rdp_epsilon set function
+  void set_rdp_epsilon(float epsilon) { rdp_epsilon = epsilon; }
 
 private:
   float rdp_epsilon;
@@ -192,7 +272,7 @@ private:
 
   Chains chains;
 
-  Result vor;
+  Voronoi vor;
 
   void run_voronoi(std::vector<Point>& points);
   void generate_result(Result& result);
@@ -217,27 +297,32 @@ private:
 // Geometry
 int counter_clockwise(Point& point1, Point& point2, Point& point3);
 double distance_between_line_point(std::vector<Point>& line, Point& point);
-template<typename T>
-int find_closest(std::vector<T> vec, T elem);
-bool isIntersecting(std::vector<Point>& line1, std::vector<Point>& line2);
+int find_closest(Chain vec, NodeT elem);
+bool is_intersecting(std::vector<Point>& line1, std::vector<Point>& line2);
 double radian(Eigen::Vector2d& v1, Eigen::Vector2d& v2);
 double total_distance(std::vector<Point>& path);
 std::vector<Triangle> triangulation(Polygon& polygon);
 
-//RDP
-double PerpendicularDistance(Point& pt, Point& lineStart, Point& lineEnd);
-void RamerDouglasPeucker(VertexChain& pointList, double epsilon, VertexChain& out);
+// RDP
+double perpendicular_distance(Point& pt, Point& lineStart, Point& lineEnd);
+void ramer_douglas_peucker(VertexChain& pointList, double epsilon, VertexChain& out);
 
 // Tricpp
-double calculateTotalArea(std::vector<Triangle>& triangles);
-bool containsNoPoints(Point& p1, Point& p2, Point& p3, Polygon& polygon);
+double calculate_total_area(std::vector<Triangle>& triangles);
+bool contains_no_points(Point& p1, Point& p2, Point& p3, Polygon& polygon);
 void earclip(Polygon& polygon, std::vector<Triangle>& triangles);
-bool isClockwise(Polygon& polygon);
-bool isConvex(Point& prev, Point& point, Point& next);
-bool isEar(Point& p1, Point& p2, Point& p3, Polygon& polygon);
-bool isPointInside(Point& p, Point& a, Point& b, Point& c);
-double triangleArea(Point& p1, Point& p2, Point& p3);
-double triangleSum(double x1, double y1, double x2, double y2, double x3, double y3);
+bool is_clockwise(Polygon& polygon);
+bool is_convex(Point& prev, Point& point, Point& next);
+bool is_ear(Point& p1, Point& p2, Point& p3, Polygon& polygon);
+bool is_point_inside(Point& p, Point& a, Point& b, Point& c);
+double triangle_area(Point& p1, Point& p2, Point& p3);
+double triangle_sum(double x1, double y1, double x2, double y2, double x3, double y3);
+
+// Qhull
+void visit_voronoi(qhT* _qh, FILE* ptr, vertexT* vertex, vertexT* vertexA, setT* centers, boolT unbounded);
+void qh_order_vertexneighbors_nd(qhT* qh, int nd, vertexT* vertex);
+int  qh_new_qhull_scipy(qhT* qh, int dim, int numpoints, coordT* points, boolT ismalloc,
+                        char* qhull_cmd, FILE* outfile, FILE* errfile, coordT* feaspoint);
 
 /**
  * Convert messages and transform data
@@ -255,10 +340,9 @@ private:
   /* Utility routines */
 
   /* Node parameters */
-  double axis_max_val;
-  int64_t axis_deadzone_val;
-  std::string joy_topic_name;
-  std::string joy_path;
+  double distance_tresh_;
+  double point_distance_;
+  double rdp_epsilon_;
 
   /* Synchronization primitives for internal update operations */
   std::atomic<bool> stop_thread;
@@ -270,22 +354,6 @@ private:
 
   /* Internal state variables */
   std::vector<std::vector<std::vector<double>>> polygons;
-
-  int dim;                  /* dimension of points */
-  int numpoints;            /* number of points */
-  coordT *points;           /* array of coordinates for each point */
-  coordT *feaspoint;
-  boolT ismalloc;           /* True if qhull should free points in qh_freeqhull() or reallocation */
-  std::string flags;        /* option flags for qhull, see html/qh-quick.htm */
-  FILE *outfile = stdout;   /* output from qh_produce_output
-                              use NULL to skip qh_produce_output */
-  FILE *errfile = stderr;   /* error messages from qhull code */
-  int exitcode;             /* 0 if no error from qhull */
-  facetT *facet;            /* set by FORALLfacets */
-  int curlong, totlong;     /* memory remaining after qh_memfreeshort */
-
-  qhT qh_qh;                /* Qhull's data structure.  First argument of most calls */
-  qhT *qh= &qh_qh;          /* Alternatively -- qhT *qh= (qhT *)malloc(sizeof(qhT)) */
 
 };
 

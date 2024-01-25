@@ -1,5 +1,5 @@
 /**
- * VoronoiPlanner RamerDouglasPeucker functions.
+ * VoronoiPlanner ramer_douglas_peucker functions.
  *
  * Lorenzo Bianchi <lnz.bnc@gmail.com>
  * Roberto Masocco <robmasocco@gmail.com>
@@ -29,7 +29,7 @@
 namespace VoronoiPlanner
 {
   /*  */
-  double PerpendicularDistance(Point& pt, Point& lineStart, Point& lineEnd)
+  double perpendicular_distance(Point& pt, Point& lineStart, Point& lineEnd)
   {
     Eigen::Vector2d dx = lineEnd - lineStart;
     dx.normalize();
@@ -49,7 +49,7 @@ namespace VoronoiPlanner
   }
 
   /*  */
-  void RamerDouglasPeucker(VertexChain& pointList, double epsilon, VertexChain& out)
+  void ramer_douglas_peucker(VertexChain& pointList, double epsilon, VertexChain& out)
   {
     if (pointList.size() < 2) throw std::invalid_argument("Not enough points to simplify");
 
@@ -59,7 +59,7 @@ namespace VoronoiPlanner
     size_t end = pointList.size()-1;
     for (size_t i = 1; i < end; i++)
     {
-      double d = PerpendicularDistance(pointList[i], pointList[0], pointList[end]);
+      double d = perpendicular_distance(pointList[i], pointList[0], pointList[end]);
       if (d > dmax)
       {
         index = i;
@@ -75,8 +75,8 @@ namespace VoronoiPlanner
       VertexChain recResults2;
       VertexChain firstLine(pointList.begin(), pointList.begin()+index+1);
       VertexChain lastLine(pointList.begin()+index, pointList.end());
-      RamerDouglasPeucker(firstLine, epsilon, recResults1);
-      RamerDouglasPeucker(lastLine, epsilon, recResults2);
+      ramer_douglas_peucker(firstLine, epsilon, recResults1);
+      ramer_douglas_peucker(lastLine, epsilon, recResults2);
 
       // Build the result list
       out.assign(recResults1.begin(), recResults1.end()-1);

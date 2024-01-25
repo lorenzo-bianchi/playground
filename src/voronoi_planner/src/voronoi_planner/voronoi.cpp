@@ -29,29 +29,30 @@
 namespace VoronoiPlanner
 {
 /*  */
-GeneralizedVoronoi::GeneralizedVoronoi() {}
+GeneralizedVoronoi::GeneralizedVoronoi() : rdp_epsilon(0.0064/*rdp_epsilon_*/) {}
 
 /*  */
 void GeneralizedVoronoi::add_point(Point& point)
 {
-  points.push_back(point);
+  this->points.push_back(point);
 }
 
 /*  */
 void GeneralizedVoronoi::add_points(std::vector<Point>& new_points)
 {
-  points.insert(points.end(), new_points.begin(), new_points.end());
+  this->points.insert(this->points.end(), new_points.begin(), new_points.end());
 }
 
 /*  */
 void GeneralizedVoronoi::add_line(Line& line)
 {
-  lines.push_back(line);
+  this->lines.push_back(line);
 
-  auto line_points = line.generateLine();
-  line_lined_points.insert(line_lined_points.end(), line_points.begin(), line_points.end());
+  auto temp = line.generate_line();
+  this->line_lined_points.insert(this->line_lined_points.end(), temp.begin(), temp.end());
+
   auto pts = line.get_points();
-  line_points.insert(line_points.end(), pts.begin(), pts.end());
+  this->line_points.insert(this->line_points.end(), pts.begin(), pts.end());
 }
 
 /*  */
@@ -65,19 +66,20 @@ void GeneralizedVoronoi::add_lines(std::vector<Line>& new_lines)
 /*  */
 void GeneralizedVoronoi::add_triangle(Triangle& triangle)
 {
-  triangles.push_back(triangle);
-  auto triangle_points = triangle.generateLine();
-  triangle_lined_points.insert(
-    triangle_lined_points.end(),
-    triangle_points.begin(), triangle_points.end());
+  this->triangles.push_back(triangle);
+
+  auto temp = triangle.generate_line();
+  this->triangle_lined_points.insert(this->triangle_lined_points.end(), temp.begin(), temp.end());
+
   auto tri = triangle.get_points();
-  triangle_points.insert(triangle_points.end(), tri.begin(), tri.end());
+  this->triangle_points.insert(this->triangle_points.end(), tri.begin(), tri.end());
 }
 
 /*  */
 void GeneralizedVoronoi::add_triangles(std::vector<Triangle>& new_triangles)
 {
-  for (auto& triangle : new_triangles) {
+  for (auto& triangle : new_triangles)
+  {
     add_triangle(triangle);
   }
 }
@@ -85,19 +87,20 @@ void GeneralizedVoronoi::add_triangles(std::vector<Triangle>& new_triangles)
 /*  */
 void GeneralizedVoronoi::add_boundary(Line& boundary)
 {
-  boundaries.push_back(boundary);
-  auto boundary_points = boundary.generateLine();
-  boundary_lined_points.insert(
-    boundary_lined_points.end(),
-    boundary_points.begin(), boundary_points.end());
+  this->boundaries.push_back(boundary);
+
+  auto temp = boundary.generate_line();
+  this->boundary_lined_points.insert(this->boundary_lined_points.end(), temp.begin(), temp.end());
+
   auto bound = boundary.get_points();
-  boundary_points.insert(boundary_points.end(), bound.begin(), bound.end());
+  this->boundary_points.insert(this->boundary_points.end(), bound.begin(), bound.end());
 }
 
 /*  */
 void GeneralizedVoronoi::add_boundaries(std::vector<Line>& new_boundaries)
 {
-  for (auto& boundary : new_boundaries) {
+  for (auto& boundary : new_boundaries)
+  {
     add_boundary(boundary);
   }
 }
@@ -106,7 +109,8 @@ void GeneralizedVoronoi::add_boundaries(std::vector<Line>& new_boundaries)
 void GeneralizedVoronoi::add_polygon(Polygon& polygon)
 {
   auto triangles = triangulation(polygon);
-  for (auto& vertices : triangles) {
+  for (auto& vertices : triangles)
+  {
     Triangle tri = Triangle(vertices);
     add_triangle(tri);
   }
@@ -126,11 +130,11 @@ Chain GeneralizedVoronoi::vertices_in_polygon()
 {
   Chain in_polygon = {};
 
-  for (size_t i = 0; i < vor.vertices.size(); i++)
+  for (size_t i = 0; i < this->vor.vertices.size(); i++)
   {
-    for (auto& tri : triangles)
+    for (auto tri : this->triangles)
     {
-      if (tri.is_in_polygon(vor.vertices[i]))
+      if (tri.is_in_polygon(this->vor.vertices[i]))
       {
         in_polygon.push_back(i);
         break;
@@ -140,18 +144,6 @@ Chain GeneralizedVoronoi::vertices_in_polygon()
 
   return in_polygon;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 /*  */
 void GeneralizedVoronoi::run_non_optimized(const bool generate_result, Result& result)
@@ -178,28 +170,10 @@ void GeneralizedVoronoi::run_non_optimized(const bool generate_result, Result& r
   if (generate_result) this->generate_result(result);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*  */
 void GeneralizedVoronoi::run_optimized(Result& result)
 {
   run_non_optimized(false, result);
-
   while (true)
   {
     if (!optimize_line()) break;
@@ -265,11 +239,11 @@ Chain GeneralizedVoronoi::unfinished_vertices()
 Chain GeneralizedVoronoi::ridges_to_delete(Chain& vertex_vec)
 {
   std::vector<NodeT> to_delete = {};
-  VertexChain vertices = vor.vertices;
+  VertexChain vertices = this->vor.vertices;
 
-  for (size_t i = 0; i < vor.ridge_vertices.size(); i++)
+  for (size_t i = 0; i < this->vor.ridge_vertices.size(); i++)
   {
-    RidgeVertex rv = vor.ridge_vertices[i];
+    RidgeVertex rv = this->vor.ridge_vertices[i];
 
     // if ridge heads outside, delete ridge
     if (rv[0] == -1 || rv[1] == -1)
@@ -280,9 +254,9 @@ Chain GeneralizedVoronoi::ridges_to_delete(Chain& vertex_vec)
 
     // if ridge contains deleted vertex, delete ridge
     bool deleted = false;
-    for (auto& ver : vertex_vec)
+    for (auto ver : vertex_vec)
     {
-      if (rv[0] == ver || rv[1] == ver)
+      if (ver == rv[0] || ver == rv[1])
       {
         to_delete.push_back(i);
         deleted = true;
@@ -295,7 +269,7 @@ Chain GeneralizedVoronoi::ridges_to_delete(Chain& vertex_vec)
     for (auto& line : lines)
     {
       Line l2 = Line({vertices[rv[0]], vertices[rv[1]]});
-      if (line.isIntersectingClass(l2))
+      if (line.is_intersecting_class(l2))
       {
         to_delete.push_back(i);
         break;
@@ -310,7 +284,7 @@ Chain GeneralizedVoronoi::ridges_to_delete(Chain& vertex_vec)
 void GeneralizedVoronoi::delete_vertex(Chain& to_delete)
 {
   Chain new_vertices = {};
-  for (size_t i = 0; i < vor.vertices.size(); i++)
+  for (int i = 0; i < (int) vor.vertices.size(); i++)
   {
     bool deleted = false;
     for (auto& ele : to_delete)
@@ -337,7 +311,7 @@ void GeneralizedVoronoi::delete_vertex(Chain& to_delete)
 void GeneralizedVoronoi::delete_ridge(Chain& to_delete)
 {
   RidgeVertices new_ridge_vertices = {};
-  for (size_t i = 0; i < vor.ridge_vertices.size(); i++)
+  for (int i = 0; i < (int) this->vor.ridge_vertices.size(); i++)
   {
     bool deleted = false;
     for (auto& ele : to_delete)
@@ -348,10 +322,10 @@ void GeneralizedVoronoi::delete_ridge(Chain& to_delete)
         break;
       }
     }
-    if (!deleted) new_ridge_vertices.push_back(vor.ridge_vertices[i]);
+    if (!deleted) new_ridge_vertices.push_back(this->vor.ridge_vertices[i]);
   }
 
-  vor.ridge_vertices = new_ridge_vertices;
+  this->vor.ridge_vertices = new_ridge_vertices;
 }
 
 /*  */
@@ -369,10 +343,10 @@ void GeneralizedVoronoi::reorganize_ridge(Chain& deleted_vertices)
 }
 
 /*  */
-void GeneralizedVoronoi::run(run_type type, bool plot = false, Result& result)
+void GeneralizedVoronoi::run(run_type type, bool plot, Result& result)
 {
-  Result result = {};
-  switch (type) {
+  switch (type)
+  {
     case run_type::non_optimized:
       run_non_optimized(true, result);
       break;
@@ -381,25 +355,58 @@ void GeneralizedVoronoi::run(run_type type, bool plot = false, Result& result)
       break;
   }
 
-  // if (plot) {
-  //   generate_plot();
-  // }
+  if (plot) this->generate_plot();
+}
+
+// void adjustBounds(const std::vector<std::vector<double>>& points, plt::Figure& fig)
+// {
+//   double xmin = std::numeric_limits<double>::infinity();
+//   double xmax = -std::numeric_limits<double>::infinity();
+//   double ymin = std::numeric_limits<double>::infinity();
+//   double ymax = -std::numeric_limits<double>::infinity();
+
+//   for (const auto& point : points)
+//   {
+//     xmin = std::min(xmin, point[0]);
+//     xmax = std::max(xmax, point[0]);
+//     ymin = std::min(ymin, point[1]);
+//     ymax = std::max(ymax, point[1]);
+//   }
+
+//   fig.xlim({xmin, xmax});
+//   fig.ylim({ymin, ymax});
+// }
+
+/*  */
+void GeneralizedVoronoi::generate_plot()
+{
+  plt::Figure fig;
+
+  std::string lineColors = "k";
+  double line_width = 1.0;
+  double line_alpha = 1.0;
+
+  double point_size = 5.0;
+  plt::scatter(this->vor.points[0], this->vor.points[1], this->vor.point_size);
+  plt::scatter(this->vor.vertices[0], this->vor.vertices[1], 20.0, "o");
+
+  plt::LineCollection finiteSegments, infiniteSegments;
+
+
+  plt::show();
 }
 
 /*  */
 bool GeneralizedVoronoi::optimize_line()
 {
   chains = generate_chains();
-  if (chains.empty()) {
-    return false;
-  }
+  if (chains.empty()) return false;
 
   VertexChains vertex_chains = generate_vertex_chains(chains);
 
   if (chains.empty()) return false;
 
   VertexChains optimized_chains = optimize_line_base(vertex_chains);
-
   regenerate_voronoi(optimized_chains);
 
   return true;
@@ -443,15 +450,13 @@ void GeneralizedVoronoi::regenerate_voronoi(VertexChains& chains)
 }
 
 /*  */
-// chains deve essere
-// [[array([0.341, 0.37]), array([0.341, 0.372]), array([0.342, 0.355])]
 VertexChains GeneralizedVoronoi::optimize_line_base(VertexChains& chains)
 {
   VertexChains optimized_chains = {};
   for (auto& chain : chains)
   {
     VertexChain out = {};
-    RamerDouglasPeucker(chain, rdp_epsilon, out);
+    ramer_douglas_peucker(chain, rdp_epsilon, out);
     optimized_chains.push_back(out);
   }
   return optimized_chains;
@@ -460,20 +465,20 @@ VertexChains GeneralizedVoronoi::optimize_line_base(VertexChains& chains)
 /*  */
 void GeneralizedVoronoi::run_voronoi(std::vector<Point>& points)
 {
-  //vor = Voronoi(points);  // TODO: QHULL
+  this->vor = Voronoi(points);
 }
 
 /*  */
 void GeneralizedVoronoi::generate_result(Result& result)
 {
-  result.triangles = triangles;
-  result.boundaries = boundaries;
-  result.points = vor.points;
-  result.points_polygon = triangle_lined_points;
-  result.vertices = vor.vertices;
-  result.ridge_vertices = vor.ridge_vertices;
-  if (!chains.empty())
-    result.chains = chains;
+  result.triangles = this->triangles;
+  result.boundaries = this->boundaries;
+  result.points = this->vor.points;
+  result.points_polygon = this->triangle_lined_points;
+  result.vertices = this->vor.vertices;
+  result.ridge_vertices = this->vor.ridge_vertices;
+  if (!this->chains.empty())
+    result.chains = this->chains;
 }
 
 /*  */

@@ -28,7 +28,7 @@
 
 namespace VoronoiPlanner
 {
-  bool isClockwise(Polygon& polygon)
+  bool is_clockwise(Polygon& polygon)
   {
     double s = 0;
     int polygonCount = polygon.size();
@@ -41,33 +41,33 @@ namespace VoronoiPlanner
     return s > 0;
   }
 
-  double triangleSum(double x1, double y1, double x2, double y2, double x3, double y3)
+  double triangle_sum(double x1, double y1, double x2, double y2, double x3, double y3)
   {
     return x1 * (y3 - y2) + x2 * (y1 - y3) + x3 * (y2 - y1);
   }
 
-  bool isConvex(Point& prev, Point& point, Point& next)
+  bool is_convex(Point& prev, Point& point, Point& next)
   {
-    return triangleSum(prev[0], prev[1], point[0], point[1], next[0], next[1]) < 0;
+    return triangle_sum(prev[0], prev[1], point[0], point[1], next[0], next[1]) < 0;
   }
 
-  double triangleArea(Point& p1, Point& p2, Point& p3)
+  double triangle_area(Point& p1, Point& p2, Point& p3)
   {
     return std::abs(
       (p1[0] * (p2[1] - p3[1]) + p2[0] * (p3[1] - p1[1]) + p3[0] * (p1[1] - p2[1])) / 2.0);
   }
 
-  bool isPointInside(Point& p, Point& a, Point& b, Point& c)
+  bool is_point_inside(Point& p, Point& a, Point& b, Point& c)
   {
-    double area = triangleArea(a, b, c);
-    double area1 = triangleArea(p, b, c);
-    double area2 = triangleArea(p, a, c);
-    double area3 = triangleArea(p, a, b);
+    double area = triangle_area(a, b, c);
+    double area1 = triangle_area(p, b, c);
+    double area2 = triangle_area(p, a, c);
+    double area3 = triangle_area(p, a, b);
     double areaDiff = std::abs(area - (area1 + area2 + area3));
     return areaDiff < EPSILON;
   }
 
-  bool containsNoPoints(Point& p1, Point& p2, Point& p3, Polygon& polygon)
+  bool contains_no_points(Point& p1, Point& p2, Point& p3, Polygon& polygon)
   {
     for (Point pn : polygon)
     {
@@ -75,7 +75,7 @@ namespace VoronoiPlanner
       {
         continue;
       }
-      else if (isPointInside(pn, p1, p2, p3))
+      else if (is_point_inside(pn, p1, p2, p3))
       {
         return false;
       }
@@ -83,18 +83,18 @@ namespace VoronoiPlanner
     return true;
   }
 
-  bool isEar(Point& p1, Point& p2, Point& p3, Polygon& polygon)
+  bool is_ear(Point& p1, Point& p2, Point& p3, Polygon& polygon)
   {
-    return containsNoPoints(p1, p2, p3, polygon) &&
-           isConvex(p1, p2, p3) &&
-           triangleArea(p1, p2, p3) > 0;
+    return contains_no_points(p1, p2, p3, polygon) &&
+           is_convex(p1, p2, p3) &&
+           triangle_area(p1, p2, p3) > 0;
   }
 
   void earclip(Polygon& polygon, std::vector<Triangle>& triangles)
   {
     Polygon earVertex = {};
     Polygon polygonCopy = polygon;
-    if (isClockwise(polygon))
+    if (is_clockwise(polygon))
     {
       std::reverse(polygonCopy.begin(), polygonCopy.end());
     }
@@ -108,7 +108,7 @@ namespace VoronoiPlanner
       int nextIndex = (i + 1) % pointCount;
       Point& nextPoint = polygonCopy[nextIndex];
 
-      if (isEar(prevPoint, point, nextPoint, polygonCopy))
+      if (is_ear(prevPoint, point, nextPoint, polygonCopy))
       {
         earVertex.push_back(point);
       }
@@ -152,7 +152,7 @@ namespace VoronoiPlanner
         {
           Point p = std::get<1>(group);
           auto earIt = std::find(earVertex.begin(), earVertex.end(), p);
-          if (isEar(std::get<0>(group), p, std::get<2>(group), std::get<3>(group)))
+          if (is_ear(std::get<0>(group), p, std::get<2>(group), std::get<3>(group)))
           {
             if (earIt == earVertex.end()) earVertex.push_back(p);
           }
@@ -165,7 +165,7 @@ namespace VoronoiPlanner
     }
   }
 
-  double calculateTotalArea(std::vector<Triangle>& triangles)
+  double calculate_total_area(std::vector<Triangle>& triangles)
   {
     double result = 0.0;
     for (auto & triangle : triangles)

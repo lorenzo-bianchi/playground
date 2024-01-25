@@ -12,7 +12,6 @@
   <depend>dua_app_management</depend>
   <depend>dua_node</depend>
   <depend>dua_qos</depend>
-  <depend>voronoi_planner_msgs</depend>
   <depend>rclcpp</depend>
   <depend>params_manager</depend>
   <depend>rclcpp_components</depend>

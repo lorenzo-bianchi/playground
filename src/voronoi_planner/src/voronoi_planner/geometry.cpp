@@ -88,44 +88,42 @@ namespace VoronoiPlanner
   }
 
   /*  */
-  template<typename T>
-  int find_closest(std::vector<T> vec, T elem)
+  int find_closest(Chain vec, NodeT elem)
   {
-    for (int i = 0; i < vec.size(); i++)
+    for (int i = 0; i < (int) vec.size(); i++)
     {
       if (vec[i] >= elem) return i;
     }
+    return -1;
   }
 
   /*  */
-  int counter_clockwise(
-    Point& point1,
-    Point& point2,
-    Point& point3)
+  int counter_clockwise(Point& point1, Point& point2, Point& point3)
   {
     Eigen::Vector2d v1 = point2 - point1;
     Eigen::Vector2d v2 = point3 - point1;
 
     // Compute cross product between v1 and v2
     double cross = v1[0] * v2[1] - v1[1] * v2[0];
-    if (cross > 0.0) return 1;
-    else if (abs(cross) < 0.00001) return -1;
+    double thr = 0.000001;
+    if (cross > thr) return 1;
+    else if (abs(cross) <= thr) return 0;
 
     return -1;
   }
 
   /*  */
-  bool isIntersecting(
+  bool is_intersecting(
     std::vector<Point>& line1,
     std::vector<Point>& line2)
   {
-    bool ccw1 = counter_clockwise(line1[0], line1[1], line2[0]);
-    bool ccw2 = counter_clockwise(line1[0], line1[1], line2[1]);
+    int ccw1 = counter_clockwise(line1[0], line1[1], line2[0]);
+    int ccw2 = counter_clockwise(line1[0], line1[1], line2[1]);
 
     if (ccw1 * ccw2 < 0.0)
     {
-      ccw1 = counter_clockwise(line2[0], line2[1], line1[0]);
-      ccw2 = counter_clockwise(line2[0], line2[1], line2[1]);
+      int ccw1 = counter_clockwise(line2[0], line2[1], line1[0]);
+      int ccw2 = counter_clockwise(line2[0], line2[1], line2[1]);
 
       if (ccw1 * ccw2 < 0.0)
       {
@@ -145,48 +143,44 @@ namespace VoronoiPlanner
 
   // Line class implementation
   /*  */
-  Line::Line() : point_distance(0.0) {}
+  Line::Line() : point_distance(0.015/*point_distance_*/) {}
 
   /*  */
-  Line::Line(std::vector<Point> inputPoints) : point_distance(0.0), points(inputPoints)
+  Line::Line(std::vector<Point> inputPoints) : point_distance(0.015/*point_distance_*/), points(inputPoints)
   {
     if (points.size() != 2) throw std::invalid_argument("Line must have 2 points.");
   }
 
   /*  */
-  std::vector<Point> Line::generateLine()
+  std::vector<Point> Line::generate_line()
   {
-    return generateLineBase(points[0], points[1]);
+    return generate_line_base(points[0], points[1]);
   }
 
   /*  */
-  std::vector<Point> Line::generateLineBase(
-    Point& point1,
-    Point& point2)
+  std::vector<Point> Line::generate_line_base(Point& point1, Point& point2)
   {
-    std::vector<Point> result;
+    std::vector<Point> result = {};
 
     if (point1[0] != point2[0])
     {
-      result = generateLineBase(point1, point2, 0);
+      auto temp = generate_line_base(point1, point2, 0);
+      result.insert(result.end(), temp.begin(), temp.end());
     }
     else if (point1[1] != point2[1])
     {
-      result = generateLineBase(point1, point2, 1);
+      auto temp = generate_line_base(point1, point2, 1);
+      result.insert(result.end(), temp.begin(), temp.end());
     }
     else
     {
       std::cout << "Identical point has been detected: [" << point1[0] << ", " << point1[1] << "]" << std::endl;
     }
-
     return result;
   }
 
   /*  */
-  std::vector<Point> Line::generateLineBase(
-    Point& point1,
-    Point& point2,
-    int axis)
+  std::vector<Point> Line::generate_line_base(Point& point1, Point& point2, int axis)
   {
     std::vector<Point> result;
 
@@ -198,19 +192,23 @@ namespace VoronoiPlanner
     }
 
     double dis = distance(point1, point2);
-    Eigen::Vector2d stepVec = (point2 - point1) / dis;
-    for (double current = point1[axis]; current <= point2[axis]; current += point_distance)
-    {
-      result.push_back(point1 + current * stepVec);
-    }
 
+    Eigen::Vector2d stepVec = (point2 - point1) / dis;
+    stepVec *= this->point_distance;
+
+    Point current = point1;
+    while (current[axis] <= point2[axis])
+    {
+      result.push_back(current);
+      current += stepVec;
+    }
     return result;
   }
 
   /*  */
-  bool Line::isIntersectingClass(Line& otherLine)
+  bool Line::is_intersecting_class(Line& otherLine)
   {
-    return isIntersecting(points, otherLine.points);
+    return is_intersecting(points, otherLine.points);
   }
 
   double Line::distance(Point& point1, Point& point2)
@@ -219,23 +217,23 @@ namespace VoronoiPlanner
   }
 
   // Triangle class implementation
-  Triangle::Triangle(std::vector<Point> inputPoints) : distance_tresh(0.0)
+  Triangle::Triangle(std::vector<Point> inputPoints) : distance_tresh(0.02/*distance_tresh_*/)
   {
     points = inputPoints;
     if (points.size() != 3) throw std::invalid_argument("Triangle must have 3 points.");
   }
 
   /*  */
-  std::vector<Point> Triangle::generateLine()
+  std::vector<Point> Triangle::generate_line()
   {
     std::vector<Point> result;
 
     // loop for every line in Triangle
-    for (size_t i = 0; i < points.size(); i++)
+    for (size_t i = 0; i < this->points.size(); i++)
     {
-      Point p1 = points[i];
-      Point p2 = points[i + 1 < points.size() ? i + 1 : 0];
-      auto v = generateLineBase(p1, p2);
+      Point p1 = this->points[i];
+      Point p2 = this->points[i + 1 < this->points.size() ? i + 1 : 0];
+      auto v = generate_line_base(p1, p2);
       result.insert(result.end(), v.begin(), v.end());
     }
 
@@ -246,24 +244,23 @@ namespace VoronoiPlanner
   bool Triangle::is_in_polygon(Point& point)
   {
     // if point is close enough, filter out
-    if (test_distance_tresh(points, point, distance_tresh))
+    if (test_distance_tresh(this->points, point, this->distance_tresh))
     {
       return true;
     }
-
-    return test_point_convex(points, point);
+    return test_point_convex(this->points, point);
   }
 
   /*  */
   bool Triangle::test_distance_tresh(
     std::vector<Point>& points,
     Point& test_point,
-    double distance_trash)
+    double distance_tresh)
   {
-    for (size_t i = 0; i < points.size(); i++)
+    for (size_t i = 0; i < 3; i++)
     {
       double dist = (test_point - points[i]).norm();
-      if (dist < distance_trash)
+      if (dist < distance_tresh)
       {
         return true;
       }
@@ -276,8 +273,9 @@ namespace VoronoiPlanner
   {
     for (size_t i = 0; i < 3; i++)
     {
-      bool ccw1 = counter_clockwise(points[i], points[(i + 1) % 3], test_point);
-      bool ccw2 = counter_clockwise(points[i], test_point, points[(i + 2) % 3]);
+      int ccw1 = counter_clockwise(points[i], points[(i + 1) % 3], test_point);
+      int ccw2 = counter_clockwise(points[i], test_point, points[(i + 2) % 3]);
+
       if (ccw1 * ccw2 <= 0.0)
       {
         return false;
