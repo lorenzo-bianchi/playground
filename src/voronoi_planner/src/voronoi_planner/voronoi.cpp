@@ -146,7 +146,7 @@ Chain GeneralizedVoronoi::vertices_in_polygon()
 }
 
 /*  */
-void GeneralizedVoronoi::run_non_optimized(const bool generate_result, Result& result)
+void GeneralizedVoronoi::run_non_optimized(bool generate_result, Result& result)
 {
   std::vector<Point> all_points = {};
   all_points.insert(all_points.end(), boundary_lined_points.begin(), boundary_lined_points.end());
@@ -161,11 +161,11 @@ void GeneralizedVoronoi::run_non_optimized(const bool generate_result, Result& r
   Chain ridge_to_delete = ridges_to_delete(unreachable_vertices);
 
   // delete unreachable vertices and ridges
-  delete_vertex(unreachable_vertices);
+  this->delete_vertex(unreachable_vertices);
   delete_ridge(ridge_to_delete);
 
   // reorganize ridge vertices
-  reorganize_ridge(unreachable_vertices);
+  this->reorganize_ridge(unreachable_vertices);
 
   if (generate_result) this->generate_result(result);
 }
@@ -174,10 +174,11 @@ void GeneralizedVoronoi::run_non_optimized(const bool generate_result, Result& r
 void GeneralizedVoronoi::run_optimized(Result& result)
 {
   run_non_optimized(false, result);
+
   while (true)
   {
-    if (!optimize_line()) break;
-    delete_unfinished();
+    if (!this->optimize_line()) break;
+    this->delete_unfinished();
   }
 }
 
@@ -185,7 +186,7 @@ void GeneralizedVoronoi::run_optimized(Result& result)
 void GeneralizedVoronoi::delete_unfinished()
 {
   // regenerate chain by optimized value
-  chains = generate_chains();
+  this->chains = generate_chains();
 
   // calculate unfinished vertices and ridges
   Chain unfinished_vertices = this->unfinished_vertices();
@@ -358,40 +359,63 @@ void GeneralizedVoronoi::run(run_type type, bool plot, Result& result)
   if (plot) this->generate_plot();
 }
 
-// void adjustBounds(const std::vector<std::vector<double>>& points, plt::Figure& fig)
-// {
-//   double xmin = std::numeric_limits<double>::infinity();
-//   double xmax = -std::numeric_limits<double>::infinity();
-//   double ymin = std::numeric_limits<double>::infinity();
-//   double ymax = -std::numeric_limits<double>::infinity();
-
-//   for (const auto& point : points)
-//   {
-//     xmin = std::min(xmin, point[0]);
-//     xmax = std::max(xmax, point[0]);
-//     ymin = std::min(ymin, point[1]);
-//     ymax = std::max(ymax, point[1]);
-//   }
-
-//   fig.xlim({xmin, xmax});
-//   fig.ylim({ymin, ymax});
-// }
-
 /*  */
 void GeneralizedVoronoi::generate_plot()
 {
-  plt::Figure fig;
+  std::vector<double> X, Y, VX, VY;
+  for (auto vector : this->vor.points)
+  {
+    X.push_back(vector[0]);
+    Y.push_back(vector[1]);
+  }
+  for (auto vector : this->vor.vertices)
+  {
+    VX.push_back(vector[0]);
+    VY.push_back(vector[1]);
+  }
 
-  std::string lineColors = "k";
-  double line_width = 1.0;
-  double line_alpha = 1.0;
+  std::vector<std::vector<Point>> finite_segments, infinite_segments;
+  int rp_size = this->vor.ridge_points.size();
+  int rv_size = this->vor.ridge_vertices.size();
+  for (int i = 0; i < std::min(rp_size, rv_size); i++)
+  {
+    //Eigen::Matrix<NodeT, 2, 1> point_idx = this->vor.ridge_points[i];
+    RidgeVertex simplex = this->vor.ridge_vertices[i];
 
-  double point_size = 5.0;
-  plt::scatter(this->vor.points[0], this->vor.points[1], this->vor.point_size);
-  plt::scatter(this->vor.vertices[0], this->vor.vertices[1], 20.0, "o");
+    // check if all simplex values are >= 0
+    bool check = true;
+    for (auto ele : simplex)
+    {
+      if (ele < 0)
+      {
+        check = false;
+        break;
+      }
+    }
+    if (check)
+    {
+      Point p1 = this->vor.vertices[simplex[0]];
+      Point p2 = this->vor.vertices[simplex[1]];
+      finite_segments.push_back({p1, p2});
+    }
+    else
+    {
+      // infinite_segments
+    }
+  }
 
-  plt::LineCollection finiteSegments, infiniteSegments;
-
+  plt::figure_size(640, 480);
+  plt::plot(X, Y, "b.");
+  plt::plot(VX, VY, "yo");
+  // plot finite_segments
+  std::vector<double> x, y;
+  for (auto& segment : finite_segments)
+  {
+    x = {segment[0][0], segment[1][0]};
+    y = {segment[0][1], segment[1][1]};
+    plt::plot(x, y, "k");
+  }
+  plt::legend();
 
   plt::show();
 }

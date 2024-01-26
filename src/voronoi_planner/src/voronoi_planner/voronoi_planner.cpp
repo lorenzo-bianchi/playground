@@ -131,25 +131,11 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   gen_vor.add_boundaries(boundaries);
   Result vor_result;
 
-  gen_vor.run(run_type::non_optimized, false, vor_result);
+  gen_vor.run(run_type::non_optimized, true, vor_result);
 
   auto endTime = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
   std::cout << "Total time: " << duration << " ms" << std::endl;
-
-
-
-  // print vor_result.ridge_vertices
-  // std::cout << "vor_result.points_polygon" << std::endl;
-  // std::cout << vor_result.points_polygon.size() << std::endl;
-  // for (auto & rv : vor_result.points_polygon)
-  // {
-  //   std::cout << rv[0] << " " << rv[1] << std::endl;
-  // }
-  // std::cout << "/////////////////////////" << std::endl;
-  //
-
-
 
   // Save data on file
   auto timestamp = std::chrono::system_clock::now();

@@ -234,7 +234,7 @@ public:
   void add_polygons(Polygons& polygons);
   bool optimize_line();
   void run(run_type type, bool plot, Result& result);
-  void run_non_optimized(const bool generate_result, Result& result);
+  void run_non_optimized(bool generate_result, Result& result);
   void run_optimized(Result& result);
     void generate_plot();
   // get functions
