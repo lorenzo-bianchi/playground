@@ -45,16 +45,55 @@ nel dizionario può accadere idx : [a], idx : [a, b] o idx : [a, b], forse di pi
 /*  */
 IndexDict::IndexDict(RidgeVertices& vec)
 {
-  DictT dict = generate(vec, false);
-  DictT rdict = generate(vec, true);
+  DictT dict = this->generate(vec, false);
+  DictT rdict = this->generate(vec, true);
+  // corretti a meno dell'ordine di inserimento, es. 43 --> [44, 45] invece di [45, 44]
+
+  // print dict
+  // std::cout << "\n\ndict" << std::endl;
+  // for (auto entry : dict)
+  // {
+  //   NodeT key = entry.first;
+  //   Chain value = entry.second;
+  //   std::cout << key << " : ";
+  //   for (NodeT ele : value)
+  //   {
+  //     std::cout << ele << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+  // // print rdict
+  // std::cout << "\n\nrdict" << std::endl;
+  // for (auto entry : rdict)
+  // {
+  //   NodeT key = entry.first;
+  //   Chain value = entry.second;
+  //   std::cout << key << " : ";
+  //   for (NodeT ele : value)
+  //   {
+  //     std::cout << ele << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
+  // print dict keys
+  // std::cout << "\n\ndict keys" << std::endl;
+  // for (auto entry : dict)
+  // {
+  //   NodeT key = entry.first;
+  //   std::cout << key << " ";;
+  // }
+  // std::cout << std::endl;
 
   for (auto entry : rdict)
   {
     NodeT key = entry.first;
-    Chain& value = entry.second;
+    Chain value = entry.second;
 
+    //std::cout << "key: " << key << std::endl;
     if (contains(dict, key))
     {
+      //std::cout << "\tkey inside: " << key << std::endl;
       for (NodeT ele : value)
       {
         if (std::find(dict[key].begin(), dict[key].end(), ele) == dict[key].end())
@@ -66,25 +105,45 @@ IndexDict::IndexDict(RidgeVertices& vec)
     else dict[key] = value;
   }
 
+  // print rdict
+  // std::cout << "\n\ndict finale" << std::endl;
+  // for (auto entry : dict)
+  // {
+  //   NodeT key = entry.first;
+  //   Chain value = entry.second;
+  //   std::cout << key << " : ";
+  //   for (NodeT ele : value)
+  //   {
+  //     std::cout << ele << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
+
   this->dict = dict;
 }
 
 /*  */
 DictT IndexDict::generate(RidgeVertices& vec, bool reverse)
 {
-  RidgeVertices sorted = vec;
   NodeT idx = reverse ? 1 : 0;
 
+  RidgeVertices sorted = vec;
   std::sort(
     sorted.begin(), sorted.end(), [idx](RidgeVertex& a, RidgeVertex& b)
     {
       return a[idx] < b[idx];
     });
 
+  // print sorted
+  // std::cout << "reverse: " << reverse << ", idx" << idx <<  std::endl;
+  // for (auto ele : sorted)
+  // {
+  //   std::cout << ele[0] << " " << ele[1] << std::endl;
+  // }
 
   Chain organized;
-  Chains value;
   std::vector<NodeT> key;
+  Chains value;
 
   NodeT current = sorted[0][idx];
 
@@ -103,11 +162,31 @@ DictT IndexDict::generate(RidgeVertices& vec, bool reverse)
   value.push_back(organized);
   key.push_back(current);
 
-  std::unordered_map<NodeT, Chain> result;
+  // print key
+  // for (auto ele : key)
+  // {
+  //   std::cout << ele << " ";
+  // }
+  // std::cout << std::endl;
+
+  std::map<NodeT, Chain> result;
   for (size_t i = 0; i < key.size(); i++)
   {
     result[key[i]] = value[i];
   }
+
+  // print result
+  // for (auto entry : result)
+  // {
+  //   NodeT key = entry.first;
+  //   Chain value = entry.second;
+  //   std::cout << key << " : ";
+  //   for (NodeT ele : value)
+  //   {
+  //     std::cout << ele << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 
   return result;
 }

@@ -40,7 +40,7 @@
 #include <ostream>
 #include <unistd.h>
 #include <stdexcept>
-#include <unordered_map>
+#include <map>
 #include <vector>
 
 #include <fstream>
@@ -89,7 +89,7 @@ typedef Eigen::Matrix<NodeT, 2, 1> ChainIdx;
 typedef std::deque<ChainIdx> ChainStart;
 typedef Eigen::Matrix<NodeT, 2, 1> RidgeVertex;
 typedef std::vector<RidgeVertex> RidgeVertices;
-typedef std::unordered_map<NodeT, Chain> DictT;
+typedef std::map<NodeT, Chain> DictT;
 typedef std::vector<Point> VertexChain;
 typedef std::vector<VertexChain> VertexChains;
 

@@ -165,13 +165,29 @@ void Qhull::get_voronoi_diagram(VertexChain& vor_vertices,
   this->ridge_points = RidgeVertices(10);
   this->ridge_vertices = {};
 
+  std::cout << "this->ridge_points 1: " << std::endl;
+  for (auto ele : this->ridge_points)
+  {
+    std::cout << ele[0] << " " << ele[1] << std::endl;
+  }
+  std::cout << std::endl;
+
   // io_r.c
   qh_eachvoronoi_all(this->qh, (FILE*) this, &visit_voronoi, this->qh[0].UPPERdelaunay, qh_RIDGEall, 1);
+
+  std::cout << "this->ridge_points 2: " << std::endl;
+  std::cout << "size: " << this->ridge_points.size() << std::endl;
+  for (auto ele : this->ridge_points)
+  {
+    std::cout << ele[0] << " " << ele[1] << std::endl;
+  }
+  std::cout << std::endl;
 
   {
     auto startIt = this->ridge_points.begin();
     auto endIt = this->ridge_points.begin() + this->nridges;
-    this->ridge_points.assign(startIt, endIt);
+    std::vector<Eigen::Matrix<NodeT, 2, 1>> tmp(startIt, endIt);
+    this->ridge_points = tmp;
   }
 
   // Now qh_eachvoronoi_all has initialized facets' visitids to correspond to Voronoi vertex indices
@@ -190,6 +206,7 @@ void Qhull::get_voronoi_diagram(VertexChain& vor_vertices,
       point_region[i] = regions.size();
 
     inf_seen = 0;
+    cur_region.clear();
     for (int k = 0; k < qh_setsize(this->qh, vertex->neighbors); k++)
     {
       neighbor = (facetT*) vertex->neighbors->e[k].p;
@@ -259,6 +276,14 @@ void Qhull::get_voronoi_diagram(VertexChain& vor_vertices,
   auto endIt = voronoi_vertices.begin() + nvoronoi_vertices;
   voronoi_vertices.assign(startIt, endIt);
 }
+
+//print this->ridge_points
+std::cout << "this->ridge_points last: " << std::endl;
+for (auto ele : this->ridge_points)
+{
+  std::cout << ele[0] << " " << ele[1] << std::endl;
+}
+
 
   vor_vertices = voronoi_vertices;
   vor_ridge_points = this->ridge_points;
