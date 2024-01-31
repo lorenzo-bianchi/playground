@@ -29,7 +29,7 @@
 namespace VoronoiPlanner
 {
 /*  */
-GeneralizedVoronoi::GeneralizedVoronoi() : rdp_epsilon(0.0064/*rdp_epsilon_*/) {}
+GeneralizedVoronoi::GeneralizedVoronoi() {}
 
 /*  */
 void GeneralizedVoronoi::add_point(Point& point)

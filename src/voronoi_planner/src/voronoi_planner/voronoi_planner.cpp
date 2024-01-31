@@ -29,6 +29,10 @@
 namespace VoronoiPlanner
 {
 
+double Line::point_distance = 0.0;
+double Triangle::distance_tresh = 0.0;
+float GeneralizedVoronoi::rdp_epsilon = 0.0;
+
 /**
  * @brief VoronoiPlanner node constructor.
  *
@@ -45,6 +49,11 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
 
   // Initialize topic publishers
   init_publishers();
+
+  // Initialize static variables
+  Line::point_distance = point_distance_;
+  Triangle::distance_tresh = distance_tresh_;
+  GeneralizedVoronoi::rdp_epsilon = rdp_epsilon_;
 
   // Test
   // Polygons polys = {

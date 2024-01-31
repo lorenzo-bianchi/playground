@@ -95,7 +95,8 @@ typedef std::map<int, Chain> Dict;
 namespace VoronoiPlanner
 {
 
-enum run_type {
+enum run_type
+{
   non_optimized = 0,
   optimized = 1
 };
@@ -110,8 +111,9 @@ public:
   std::vector<Point> get_points() { return points; }
   void set_point_distance(double distance) { point_distance = distance; }
 
+  static double point_distance;
+
 protected:
-  double point_distance;
   std::vector<Point> points;
 
   std::vector<Point> generate_line_base(Point& point1, Point& point2);
@@ -127,8 +129,9 @@ public:
   bool is_in_polygon(Point& point);
   void set_distance_tresh(double distance) { distance_tresh = distance; }
 
+  static double distance_tresh;
+
 private:
-  double distance_tresh;
   bool test_distance_tresh(std::vector<Point>& points, Point& test_point, double distance_trash);
   bool test_point_convex(std::vector<Point>& points, Point& test_point);
 };
@@ -247,12 +250,9 @@ public:
   Chains get_chains() { return chains; }
   Voronoi get_vor() { return vor; }
 
-  // rdp_epsilon set function
-  void set_rdp_epsilon(float epsilon) { rdp_epsilon = epsilon; }
+  static float rdp_epsilon;
 
 private:
-  float rdp_epsilon;
-
   std::vector<Point> points;
   std::vector<Line> lines;
   std::vector<Triangle> triangles;

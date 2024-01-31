@@ -136,10 +136,10 @@ namespace VoronoiPlanner
 
   // Line class implementation
   /*  */
-  Line::Line() : point_distance(0.015/*point_distance_*/) {}
+  Line::Line() {}
 
   /*  */
-  Line::Line(std::vector<Point> inputPoints) : point_distance(0.015/*point_distance_*/), points(inputPoints)
+  Line::Line(std::vector<Point> inputPoints) : points(inputPoints)
   {
     if (points.size() != 2) throw std::invalid_argument("Line must have 2 points.");
   }
@@ -210,7 +210,7 @@ namespace VoronoiPlanner
   }
 
   // Triangle class implementation
-  Triangle::Triangle(std::vector<Point> inputPoints) : distance_tresh(0.02/*distance_tresh_*/)
+  Triangle::Triangle(std::vector<Point> inputPoints)
   {
     points = inputPoints;
     if (points.size() != 3) throw std::invalid_argument("Triangle must have 3 points.");
