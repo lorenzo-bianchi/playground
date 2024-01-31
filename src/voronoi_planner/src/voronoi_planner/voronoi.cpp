@@ -238,7 +238,7 @@ Chain GeneralizedVoronoi::unfinished_vertices()
 /*  */
 Chain GeneralizedVoronoi::ridges_to_delete(Chain& vertex_vec)
 {
-  std::vector<NodeT> to_delete = {};
+  std::vector<int> to_delete = {};
   VertexChain vertices = this->vor.vertices;
 
   for (size_t i = 0; i < this->vor.ridge_vertices.size(); i++)
@@ -284,7 +284,7 @@ Chain GeneralizedVoronoi::ridges_to_delete(Chain& vertex_vec)
 void GeneralizedVoronoi::delete_vertex(Chain to_delete)
 {
   std::sort(to_delete.rbegin(), to_delete.rend());
-  for (NodeT idx : to_delete)
+  for (int idx : to_delete)
   {
     this->vor.vertices.erase(this->vor.vertices.begin() + idx);
   }
@@ -294,7 +294,7 @@ void GeneralizedVoronoi::delete_vertex(Chain to_delete)
 void GeneralizedVoronoi::delete_ridge(Chain to_delete)
 {
   std::sort(to_delete.rbegin(), to_delete.rend());
-  for (NodeT idx : to_delete)
+  for (int idx : to_delete)
   {
     this->vor.ridge_vertices.erase(this->vor.ridge_vertices.begin() + idx);
   }
@@ -306,10 +306,10 @@ void GeneralizedVoronoi::reorganize_ridge(Chain& deleted_vertices)
   for (size_t i = 0; i < this->vor.ridge_vertices.size(); i++)
   {
     RidgeVertex rv = this->vor.ridge_vertices[i];
-    NodeT rv0 = rv[0];
-    NodeT rv1 = rv[1];
-    NodeT rv0i = find_closest(deleted_vertices, rv0);
-    NodeT rv1i = find_closest(deleted_vertices, rv1);
+    int rv0 = rv[0];
+    int rv1 = rv[1];
+    int rv0i = find_closest(deleted_vertices, rv0);
+    int rv1i = find_closest(deleted_vertices, rv1);
     this->vor.ridge_vertices[i] = RidgeVertex({rv0 - rv0i, rv1 - rv1i});
   }
 }
@@ -491,9 +491,9 @@ Chains GeneralizedVoronoi::generate_chains()
 
   // ignition value must be dead end point (which has only 1 neighbor)
   int ignition_idx = -1;
-  for (std::pair<NodeT, Chain> entry : dict.items())
+  for (std::pair<int, Chain> entry : dict.items())
   {
-    NodeT key = entry.first;
+    int key = entry.first;
     Chain value = entry.second;
 
     if (value.size() == 1)
@@ -583,7 +583,7 @@ ChainStart GeneralizedVoronoi::chain(IndexDict& dict, ChainIdx& idx, Chain& chai
     if (check1) has_visited[0] = true;
     if (check2) has_visited[1] = true;
 
-    NodeT next_idx;
+    int next_idx;
     // if both neighbor is visited, it's end of line
     if (has_visited[0] && has_visited[1])
     {

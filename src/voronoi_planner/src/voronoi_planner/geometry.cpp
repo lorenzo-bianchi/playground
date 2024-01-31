@@ -86,7 +86,7 @@ namespace VoronoiPlanner
   }
 
   /*  */
-  int find_closest(Chain vec, NodeT elem)
+  int find_closest(Chain vec, int elem)
   {
     for (int i = 0; i < (int) vec.size(); i++)
     {

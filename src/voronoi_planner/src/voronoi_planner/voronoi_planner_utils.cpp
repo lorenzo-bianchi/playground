@@ -191,7 +191,7 @@ void VoronoiPlannerNode::save_log()
   outputFile << vor.regions.size() << std::endl;
   for (Chain p : vor.regions)
   {
-    for (NodeT q : p)
+    for (int q : p)
     {
       outputFile << q << " ";
     }

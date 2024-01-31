@@ -35,15 +35,15 @@
 #include <cstdio>
 #include <deque>
 #include <Eigen/Dense>
-#include <fcntl.h>
+#include <fstream>
 #include <iostream>
-#include <ostream>
-#include <unistd.h>
-#include <stdexcept>
 #include <map>
+#include <ostream>
+#include <stdexcept>
 #include <vector>
 
-#include <fstream>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <dua_node/dua_node.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -79,19 +79,18 @@ using namespace rcl_interfaces::msg;
 
 namespace plt = matplotlibcpp;
 
+typedef std::vector<int> Chain;
+typedef std::vector<Chain> Chains;
+typedef Eigen::Vector2i ChainIdx;
+typedef std::deque<ChainIdx> ChainStart;
 typedef Eigen::Vector2d Point;
 typedef std::vector<Point> Polygon;
 typedef std::vector<Polygon> Polygons;
-typedef int NodeT;
-typedef std::vector<NodeT> Chain;
-typedef std::vector<Chain> Chains;
-typedef Eigen::Matrix<NodeT, 2, 1> ChainIdx;
-typedef std::deque<ChainIdx> ChainStart;
-typedef Eigen::Matrix<NodeT, 2, 1> RidgeVertex;
+typedef Eigen::Vector2i RidgeVertex;
 typedef std::vector<RidgeVertex> RidgeVertices;
-typedef std::map<NodeT, Chain> DictT;
 typedef std::vector<Point> VertexChain;
 typedef std::vector<VertexChain> VertexChains;
+typedef std::map<int, Chain> Dict;
 
 namespace VoronoiPlanner
 {
@@ -149,15 +148,15 @@ class IndexDict
 {
 public:
   IndexDict(RidgeVertices& vec);
-  bool contains(NodeT key);
-  Chain find(NodeT key);
-  std::vector<std::pair<NodeT, Chain>> items();
+  bool contains(int key);
+  Chain find(int key);
+  std::vector<std::pair<int, Chain>> items();
 
 private:
-  DictT dict;
+  Dict dict;
 
-  bool contains(DictT& dict, NodeT key);
-  DictT generate(RidgeVertices& vec, bool reverse);
+  bool contains(Dict& dict, int key);
+  Dict generate(RidgeVertices& vec, bool reverse);
 };
 
 class Qhull
@@ -165,17 +164,17 @@ class Qhull
 public:
   Qhull(std::string flags, std::vector<Point> points);
   ~Qhull();
-  RidgeVertices ridge_vertices;
   std::vector<Point> get_points();
   void get_voronoi_diagram(VertexChain& vor_vertices,
-                           std::vector<Eigen::Matrix<NodeT, 2, 1>>& vor_ridge_points,
+                           std::vector<Eigen::Vector2i>& vor_ridge_points,
                            RidgeVertices& vor_ridge_vertices,
                            Chains& vor_regions,
-                           std::vector<NodeT>& vor_point_region);
+                           std::vector<int>& vor_point_region);
   int get_nridges() { return nridges; }
   void set_nridges(int n) { nridges = n; }
-  std::vector<Eigen::Matrix<NodeT, 2, 1>> get_ridge_points() { return ridge_points; }
-  std::vector<Eigen::Matrix<NodeT, 2, 1>> ridge_points;
+
+  RidgeVertices ridge_vertices;
+  std::vector<Eigen::Vector2i> ridge_points;
 
 private:
   qhT* qh;
@@ -202,10 +201,10 @@ public:
   Chains chains;
 
   VertexChain vertices;
-  std::vector<Eigen::Matrix<NodeT, 2, 1>> ridge_points;
+  std::vector<Eigen::Vector2i> ridge_points;
   RidgeVertices ridge_vertices;
   Chains regions;
-  std::vector<NodeT> point_region;
+  std::vector<int> point_region;
   std::vector<Point> points;
   int ndim;
   int npoints;
@@ -294,7 +293,7 @@ private:
 // Geometry
 int counter_clockwise(Point& point1, Point& point2, Point& point3);
 double distance_between_line_point(std::vector<Point>& line, Point& point);
-int find_closest(Chain vec, NodeT elem);
+int find_closest(Chain vec, int elem);
 bool is_intersecting(std::vector<Point>& line1, std::vector<Point>& line2);
 double radian(Eigen::Vector2d& v1, Eigen::Vector2d& v2);
 double total_distance(std::vector<Point>& path);
@@ -322,7 +321,7 @@ int  qh_new_qhull_scipy(qhT* qh, int dim, int numpoints, coordT* points, boolT i
                         char* qhull_cmd, FILE* outfile, FILE* errfile, coordT* feaspoint);
 
 /**
- * Convert messages and transform data
+ * @brief VoronoiPlanner node class.
  */
 class VoronoiPlannerNode : public DUANode::NodeBase
 {

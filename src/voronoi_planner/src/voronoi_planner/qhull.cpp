@@ -111,10 +111,10 @@ std::vector<Point> Qhull::get_points()
 
 /*  */
 void Qhull::get_voronoi_diagram(VertexChain& vor_vertices,
-                                std::vector<Eigen::Matrix<NodeT, 2, 1>>& vor_ridge_points,
+                                std::vector<Eigen::Vector2i>& vor_ridge_points,
                                 RidgeVertices& vor_ridge_vertices,
                                 Chains& vor_regions,
-                                std::vector<NodeT>& vor_point_region)
+                                std::vector<int>& vor_point_region)
 {
   // Return the voronoi diagram currently in Qhull.
 
@@ -165,14 +165,14 @@ void Qhull::get_voronoi_diagram(VertexChain& vor_vertices,
   {
     auto startIt = this->ridge_points.begin();
     auto endIt = this->ridge_points.begin() + this->nridges;
-    std::vector<Eigen::Matrix<NodeT, 2, 1>> tmp(startIt, endIt);
+    std::vector<Eigen::Vector2i> tmp(startIt, endIt);
     this->ridge_points = tmp;
   }
 
   // Now qh_eachvoronoi_all has initialized facets' visitids to correspond to Voronoi vertex indices
 
   // Grab Voronoi regions
-  std::vector<NodeT> point_region(this->numpoints, -1);
+  std::vector<int> point_region(this->numpoints, -1);
   vertex = this->qh[0].vertex_list;
 
   while (vertex && vertex->next)
@@ -331,7 +331,7 @@ void visit_voronoi(qhT* _qh, FILE* ptr, vertexT* vertex, vertexT* vertexA, setT*
   p[2*qh->get_nridges() + 1] = point2;
 
   // Record which voronoi vertices constitute the ridge
-  Eigen::Matrix<NodeT, 2, 1> cur_vertices;
+  Eigen::Vector2i cur_vertices;
   for (int i = 0; i < qh_setsize(_qh, centers); i++)
   {
     ix = ((facetT*) centers->e[i].p)->visitid - 1;

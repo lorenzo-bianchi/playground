@@ -31,17 +31,17 @@ namespace VoronoiPlanner
 /*  */
 IndexDict::IndexDict(RidgeVertices& vec)
 {
-  DictT dict = this->generate(vec, false);
-  DictT rdict = this->generate(vec, true);
+  Dict dict = this->generate(vec, false);
+  Dict rdict = this->generate(vec, true);
 
   for (auto entry : rdict)
   {
-    NodeT key = entry.first;
+    int key = entry.first;
     Chain value = entry.second;
 
     if (contains(dict, key))
     {
-      for (NodeT ele : value)
+      for (int ele : value)
       {
         if (std::find(dict[key].begin(), dict[key].end(), ele) == dict[key].end())
         {
@@ -56,9 +56,9 @@ IndexDict::IndexDict(RidgeVertices& vec)
 }
 
 /*  */
-DictT IndexDict::generate(RidgeVertices& vec, bool reverse)
+Dict IndexDict::generate(RidgeVertices& vec, bool reverse)
 {
-  NodeT idx = reverse ? 1 : 0;
+  int idx = reverse ? 1 : 0;
 
   RidgeVertices sorted = vec;
   std::stable_sort(
@@ -68,10 +68,10 @@ DictT IndexDict::generate(RidgeVertices& vec, bool reverse)
     });
 
   Chain organized;
-  std::vector<NodeT> key;
+  std::vector<int> key;
   Chains value;
 
-  NodeT current = sorted[0][idx];
+  int current = sorted[0][idx];
 
   for (auto ele : sorted)
   {
@@ -88,7 +88,7 @@ DictT IndexDict::generate(RidgeVertices& vec, bool reverse)
   value.push_back(organized);
   key.push_back(current);
 
-  DictT result;
+  Dict result;
   for (size_t i = 0; i < key.size(); i++)
   {
     result[key[i]] = value[i];    // FIXME
@@ -98,28 +98,28 @@ DictT IndexDict::generate(RidgeVertices& vec, bool reverse)
 }
 
 /*  */
-bool IndexDict::contains(DictT& dict, NodeT key)
+bool IndexDict::contains(Dict& dict, int key)
 {
   return dict.find(key) != dict.end();
 }
 
 /*  */
-bool IndexDict::contains(NodeT key)
+bool IndexDict::contains(int key)
 {
   return contains(this->dict, key);
 }
 
 /*  */
-Chain IndexDict::find(NodeT key)
+Chain IndexDict::find(int key)
 {
   if (contains(key)) return this->dict.at(key);
   return {};
 }
 
 /*  */
-std::vector<std::pair<NodeT, Chain>> IndexDict::items()
+std::vector<std::pair<int, Chain>> IndexDict::items()
 {
-  std::vector<std::pair<NodeT, Chain>> result;
+  std::vector<std::pair<int, Chain>> result;
   for (auto entry : this->dict)
   {
     result.push_back(entry);
