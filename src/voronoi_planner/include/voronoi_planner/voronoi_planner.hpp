@@ -39,6 +39,7 @@
 #include <iostream>
 #include <map>
 #include <ostream>
+#include <queue>
 #include <stdexcept>
 #include <vector>
 
@@ -150,6 +151,8 @@ struct Result
 class IndexDict
 {
 public:
+  IndexDict() {}
+  void insert(int key, Chain& value);
   IndexDict(RidgeVertices& vec);
   bool contains(int key);
   Chain find(int key);
@@ -286,6 +289,60 @@ private:
   void delete_ridge(Chain to_delete);
   void reorganize_ridge(Chain& deleted_vertices);
   Chain vertices_in_polygon();
+};
+
+class Astar
+{
+public:
+  Astar(Result vor, Point start, Point end);
+  void set_result(std::vector<Point> result) { this->result = result; }
+  std::vector<Point> get_result() { return result; }
+
+  class Node
+  {
+  public:
+    Node() {}
+    Node(int idx, Node* parent, double g, double h);
+    int get_idx() { return idx; }
+    Node* get_parent() { return parent; }
+    double get_g() { return g; }
+    double get_h() { return h; }
+    double get_f() { return f; }
+    void set_idx(int idx) { this->idx = idx; }
+    void set_parent(Node* parent) { this->parent = parent; }
+    void set_g(double g) { this->g = g; }
+    void set_h(double h) { this->h = h; }
+    void set_f(double f) { this->f = f; }
+
+    bool operator<(const Node& other) const
+    {
+      return f < other.f;
+    }
+
+  private:
+    int idx;
+    Node* parent;
+    double g;
+    double h;
+    double f;
+  };
+
+  std::vector<Point> run();
+
+private:
+  std::vector<Point> result;
+  Result vor;
+  IndexDict dict;
+  int start;
+  int end;
+
+  Node* astar();
+  double heuristic(int idx);
+  Node* generate_node(int idx, Node* current);
+  bool is_goal(int idx);
+  int add_ridge(Point point);
+  std::vector<int> find_adjacent(Point point);
+  void generate_plot2();
 };
 
 ///////////////////////////////////

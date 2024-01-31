@@ -56,6 +56,29 @@ IndexDict::IndexDict(RidgeVertices& vec)
 }
 
 /*  */
+void IndexDict::insert(int key, Chain& value)
+{
+  if (contains(this->dict, key))
+  {
+    throw std::invalid_argument("Key already exists");
+  }
+
+  this->dict[key] = value;
+
+  for (int ele : value)
+  {
+    if (contains(this->dict, ele))
+    {
+      this->dict[ele].push_back(key);
+    }
+    else
+    {
+      this->dict[ele] = {key};
+    }
+  }
+}
+
+/*  */
 Dict IndexDict::generate(RidgeVertices& vec, bool reverse)
 {
   int idx = reverse ? 1 : 0;
