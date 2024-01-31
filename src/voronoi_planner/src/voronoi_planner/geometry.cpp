@@ -41,9 +41,7 @@ namespace VoronoiPlanner
   }
 
   /*  */
-  double distance_between_line_point(
-    std::vector<Point>& line,
-    Point& point)
+  double distance_between_line_point(std::vector<Point>& line, Point& point)
   {
     Eigen::Vector2d v1 = line[1] - line[0];
     Eigen::Vector2d v2 = point - line[0];
@@ -138,10 +136,10 @@ namespace VoronoiPlanner
 
   // Line class implementation
   /*  */
-  Line::Line() : point_distance(0.2/*0.015*//*point_distance_*/) {}
+  Line::Line() : point_distance(0.015/*point_distance_*/) {}
 
   /*  */
-  Line::Line(std::vector<Point> inputPoints) : point_distance(0.2/*0.015*//*point_distance_*/), points(inputPoints)
+  Line::Line(std::vector<Point> inputPoints) : point_distance(0.015/*point_distance_*/), points(inputPoints)
   {
     if (points.size() != 2) throw std::invalid_argument("Line must have 2 points.");
   }
@@ -186,7 +184,7 @@ namespace VoronoiPlanner
       point2 = temp;
     }
 
-    double dis = distance(point1, point2);
+    double dis = this->distance(point1, point2);
 
     Eigen::Vector2d stepVec = (point2 - point1) / dis;
     stepVec *= this->point_distance;

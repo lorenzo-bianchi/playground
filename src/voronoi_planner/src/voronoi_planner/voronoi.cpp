@@ -58,8 +58,9 @@ void GeneralizedVoronoi::add_line(Line& line)
 /*  */
 void GeneralizedVoronoi::add_lines(std::vector<Line>& new_lines)
 {
-  for (auto& line : new_lines) {
-    add_line(line);
+  for (auto& line : new_lines)
+  {
+    this->add_line(line);
   }
 }
 
@@ -80,7 +81,7 @@ void GeneralizedVoronoi::add_triangles(std::vector<Triangle>& new_triangles)
 {
   for (auto& triangle : new_triangles)
   {
-    add_triangle(triangle);
+    this->add_triangle(triangle);
   }
 }
 
@@ -101,7 +102,7 @@ void GeneralizedVoronoi::add_boundaries(std::vector<Line>& new_boundaries)
 {
   for (auto& boundary : new_boundaries)
   {
-    add_boundary(boundary);
+    this->add_boundary(boundary);
   }
 }
 
@@ -112,7 +113,7 @@ void GeneralizedVoronoi::add_polygon(Polygon& polygon)
   for (auto& vertices : triangles)
   {
     Triangle tri = Triangle(vertices);
-    add_triangle(tri);
+    this->add_triangle(tri);
   }
 }
 
@@ -121,7 +122,7 @@ void GeneralizedVoronoi::add_polygons(Polygons& polygons)
 {
   for (auto& polygon : polygons)
   {
-    add_polygon(polygon);
+    this->add_polygon(polygon);
   }
 }
 
@@ -154,15 +155,15 @@ void GeneralizedVoronoi::run_non_optimized(bool generate_result, Result& result)
   all_points.insert(all_points.end(), line_lined_points.begin(), line_lined_points.end());
   all_points.insert(all_points.end(), points.begin(), points.end());
 
-  run_voronoi(all_points);
+  this->run_voronoi(all_points);
 
   // calculate unreachable vertices and ridges
-  Chain unreachable_vertices = vertices_in_polygon();
-  Chain ridge_to_delete = ridges_to_delete(unreachable_vertices);
+  Chain unreachable_vertices = this->vertices_in_polygon();
+  Chain ridge_to_delete = this->ridges_to_delete(unreachable_vertices);
 
   // delete unreachable vertices and ridges
   this->delete_vertex(unreachable_vertices);
-  delete_ridge(ridge_to_delete);
+  this->delete_ridge(ridge_to_delete);
 
   // reorganize ridge vertices
   this->reorganize_ridge(unreachable_vertices);
@@ -173,39 +174,20 @@ void GeneralizedVoronoi::run_non_optimized(bool generate_result, Result& result)
 /*  */
 void GeneralizedVoronoi::run_optimized(Result& result)
 {
-  run_non_optimized(false, result);
+  this->run_non_optimized(false, result);
 
   while (true)
   {
-    LINE  // 1
-    if (!this->optimize_line())
-    {
-      LINE  //2
-      break;
-    }
-    LINE    // 3
+    if (!this->optimize_line()) break;
     this->delete_unfinished();
-    LINE  // 4
   }
-  LINE
 }
 
 /*  */
 void GeneralizedVoronoi::delete_unfinished()
 {
-LINE
   // regenerate chain by optimized value
   this->chains = this->generate_chains();
-  //print chains
-  // std::cout << "chains:" << std::endl;
-  // for (auto& chain : chains)
-  // {
-  //   for (auto& ele : chain)
-  //   {
-  //     std::cout << ele << " ";
-  //   }
-  //   std::cout << std::endl;
-  // }
 
   // calculate unfinished vertices and ridges
   Chain unfinished_vertices = this->unfinished_vertices();
@@ -301,29 +283,6 @@ Chain GeneralizedVoronoi::ridges_to_delete(Chain& vertex_vec)
 /*  */
 void GeneralizedVoronoi::delete_vertex(Chain to_delete)
 {
-  // Chain new_vertices = {};
-  // for (int i = 0; i < (int) this->vor.vertices.size(); i++)
-  // {
-  //   bool deleted = false;
-  //   for (auto& ele : to_delete)
-  //   {
-  //     if (i == ele)
-  //     {
-  //       deleted = true;
-  //       break;
-  //     }
-  //   }
-  //   if (!deleted) new_vertices.push_back(i);
-  // }
-
-  // VertexChain vertices = {};
-  // for (auto& ele : new_vertices)
-  // {
-  //   vertices.push_back(this->vor.vertices[ele]);
-  // }
-
-  // this->vor.vertices = vertices;
-
   std::sort(to_delete.rbegin(), to_delete.rend());
   for (NodeT idx : to_delete)
   {
@@ -334,23 +293,6 @@ void GeneralizedVoronoi::delete_vertex(Chain to_delete)
 /*  */
 void GeneralizedVoronoi::delete_ridge(Chain to_delete)
 {
-  // RidgeVertices new_ridge_vertices = {};
-  // for (int i = 0; i < (int) this->vor.ridge_vertices.size(); i++)
-  // {
-  //   bool deleted = false;
-  //   for (auto& ele : to_delete)
-  //   {
-  //     if (i == ele)
-  //     {
-  //       deleted = true;
-  //       break;
-  //     }
-  //   }
-  //   if (!deleted) new_ridge_vertices.push_back(this->vor.ridge_vertices[i]);
-  // }
-
-  // this->vor.ridge_vertices = new_ridge_vertices;
-
   std::sort(to_delete.rbegin(), to_delete.rend());
   for (NodeT idx : to_delete)
   {
@@ -378,10 +320,10 @@ void GeneralizedVoronoi::run(run_type type, bool plot, Result& result)
   switch (type)
   {
     case run_type::non_optimized:
-      run_non_optimized(true, result);
+      this->run_non_optimized(true, result);
       break;
     case run_type::optimized:
-      run_optimized(result);
+      this->run_optimized(result);
       break;
   }
 
@@ -408,7 +350,6 @@ void GeneralizedVoronoi::generate_plot()
   int rv_size = this->vor.ridge_vertices.size();
   for (int i = 0; i < std::min(rp_size, rv_size); i++)
   {
-    //Eigen::Matrix<NodeT, 2, 1> point_idx = this->vor.ridge_points[i];
     RidgeVertex simplex = this->vor.ridge_vertices[i];
 
     // check if all simplex values are >= 0
@@ -428,8 +369,6 @@ void GeneralizedVoronoi::generate_plot()
 
       if (idx_x > (int) this->vor.vertices.size() || idx_y > (int) this->vor.vertices.size())
       {
-        std::cout << "size: " <<  this->vor.vertices.size() << " " <<
-                     "idx_x: " << idx_x << " idx_y: " << idx_y << std::endl;
         throw std::invalid_argument("Error in generate_plot()");
       }
 
@@ -446,6 +385,7 @@ void GeneralizedVoronoi::generate_plot()
   plt::figure_size(640, 480);
   plt::plot(X, Y, "b.");
   plt::plot(VX, VY, "yo");
+
   // plot finite_segments
   std::vector<double> x, y;
   for (auto& segment : finite_segments)
@@ -455,24 +395,23 @@ void GeneralizedVoronoi::generate_plot()
     plt::plot(x, y, "k");
   }
   plt::legend();
-
+  plt::set_aspect_equal();
   plt::show();
 }
 
 /*  */
 bool GeneralizedVoronoi::optimize_line()
 {
-LINE
   this->chains = this->generate_chains();
   if (this->chains.size() == 0) return false;
-LINE
+
   VertexChains vertex_chains = this->generate_vertex_chains(this->chains);
-LINE
+
   if (this->chains.empty()) return false; // FIXME
-LINE
+
   VertexChains optimized_chains = this->optimize_line_base(vertex_chains);
   this->regenerate_voronoi(optimized_chains);
-LINE
+
   return true;
 }
 
@@ -520,21 +459,7 @@ VertexChains GeneralizedVoronoi::optimize_line_base(VertexChains& chains)
   for (auto& chain : chains)
   {
     VertexChain out = {};
-    // // show chain
-    // std::cout << "chain: ";
-    // for (auto& ele : chain)
-    // {
-    //   std::cout << ele[0] << " " << ele[1] << " ||| ";
-    // }
-    // std::cout << std::endl;
     ramer_douglas_peucker(chain, rdp_epsilon, out);
-    // // show out
-    // std::cout << "out: ";
-    // for (auto& ele : out)
-    // {
-    //   std::cout << ele[0] << " " << ele[1] << " ||| ";
-    // }
-    // std::cout << std::endl;
     optimized_chains.push_back(out);
   }
   return optimized_chains;
@@ -562,26 +487,7 @@ void GeneralizedVoronoi::generate_result(Result& result)
 /*  */
 Chains GeneralizedVoronoi::generate_chains()
 {
-//print vor.ridge_vertices
-// std::cout << "vor.ridge_vertices:" << std::endl;
-// for (auto& ele : this->vor.ridge_vertices)
-// {
-//   std::cout << ele[0] << " " << ele[1] << std::endl;
-// }
   IndexDict dict = IndexDict(this->vor.ridge_vertices);
-
-              for (std::pair<NodeT, Chain> entry : dict.items())
-              {
-                NodeT key = entry.first;
-                Chain value = entry.second;
-                std::cout << "\t\t\tkey: " << key << ", value: ";
-                for (auto& ele : value)
-                {
-                  std::cout << ele << " ";
-                }
-                std::cout << std::endl;
-              }
-              std::cout << std::endl << std::endl;
 
   // ignition value must be dead end point (which has only 1 neighbor)
   int ignition_idx = -1;
@@ -596,7 +502,6 @@ Chains GeneralizedVoronoi::generate_chains()
       break;
     }
   }
-  std::cout << "\t\t\tignition_idx: " << ignition_idx << std::endl;
 
   // voronoi diagram with no dead end point cannot be optimized
   if (ignition_idx == -1) return {};
@@ -613,17 +518,6 @@ Chains GeneralizedVoronoi::generate_chains()
     chains.push_back(temp);
   }
 
-  // print chains
-  // std::cout << "chains:" << std::endl;
-  // for (auto& chain : chains)
-  // {
-  //   for (auto& ele : chain)
-  //   {
-  //     std::cout << ele << " ";
-  //   }
-  //   std::cout << std::endl;
-  // }
-
   return chains;
 }
 
@@ -631,41 +525,16 @@ Chains GeneralizedVoronoi::generate_chains()
 Chain GeneralizedVoronoi::generate_chain(IndexDict& dict, ChainStart& start, Chain& feature)
 {
   Chain chain = {};
-  // print start
-  // std::cout << "--------------------------------------------------" << std::endl;
-  // std::cout << "start pre pop: " << std::endl;
-  // std::cout << "\t\t";
-  // for (auto& ele : start)
-  // {
-  //   std::cout << ele[0] << " " << ele[1] << " ";
-  // }
-  // std::cout << std::endl;
 
   // get new starting point
   ChainIdx idx = start.back();
   start.pop_back();
-
-  // std::cout << "start post pop: " << std::endl;
-  // std::cout << "\t\t";
-  // for (auto& ele : start)
-  // {
-  //   std::cout << ele[0] << " " << ele[1] << " ";
-  // }
-  // std::cout << std::endl;
 
   // case of dead end point
   if (idx[0] != -1) chain.push_back(idx[0]);
 
   // ignite chain
   ChainStart new_start = this->chain(dict, idx, chain, feature);
-  // print new_start
-  // std::cout << "new_start: " << std::endl;
-  // std::cout << "\t\t";
-  // for (auto& ele : new_start)
-  // {
-  //   std::cout << ele[0] << " " << ele[1] << " ";
-  // }
-  // std::cout << std::endl;
 
   // add chain start and end to feature points
   feature.push_back(chain.front());
@@ -698,7 +567,6 @@ ChainStart GeneralizedVoronoi::chain(IndexDict& dict, ChainIdx& idx, Chain& chai
   // case 1, dead end point
   if (neighbor_count == 1)
   {
-    // std::cout << "\t\t1" << std::endl;
     if (neighbor[0] == idx[0]) return {};
     ChainIdx new_idx = {idx[1], neighbor[0]};
     return this->chain(dict, new_idx, chain, feature);
@@ -707,7 +575,6 @@ ChainStart GeneralizedVoronoi::chain(IndexDict& dict, ChainIdx& idx, Chain& chai
   // case 2, middle of line
   else if (neighbor_count == 2)
   {
-    // std::cout << "\t\t2" << std::endl;
     std::vector<bool> has_visited = {false, false};
     // check if neighbor[0] is in visited
     bool check1 = std::find(visited.begin(), visited.end(), neighbor[0]) != visited.end();
@@ -734,48 +601,21 @@ ChainStart GeneralizedVoronoi::chain(IndexDict& dict, ChainIdx& idx, Chain& chai
     ChainIdx new_idx = {idx[1], neighbor[next_idx]};
     return this->chain(dict, new_idx, chain, feature);
   }
-  // print visited
-  // std::cout << "visited: " << std::endl;
-  // std::cout << "\t\t";
-  // for (auto& ele : visited)
-  // {
-  //   std::cout << ele << " ";
-  // }
-  // std::cout << std::endl;
-  // print neighbor
-  // std::cout << "neighbor: " << std::endl;
-  // std::cout << "\t\t";
-  // for (auto& ele : neighbor)
-  // {
-  //   std::cout << ele << " ";
-  // }
-  // std::cout << std::endl;
 
-
-
-
-
-  // std::cout << "\t\t3" << std::endl;
   // case more than 2, diverging point
   // line must end on diverging point
   // new starting points must be added for full construction
   ChainStart new_start_points = {};
   for (int i = 0; i < neighbor_count; i++)
   {
-    // std::cout << "\t\t4" << std::endl;
     bool check = std::find(visited.begin(), visited.end(), neighbor[i]) != visited.end();
     if (check) continue;
-    // std::cout << "\t\t5" << std::endl;
     new_start_points.push_back({idx[1], neighbor[i]});
   }
-  // std::cout << "\t\t6" << std::endl;
   return new_start_points;
 }
 
 /*  */
-// chains sono
-// [[120, 121, 269], [269, 268, 267, 341], [341, 340, 339, 222, 286, 287], [290, 292]]
-// ritorna [[[0.341, 0.37], [0.341, 0.372], [0.342, 0.355]]]
 std::vector<std::vector<Point>> GeneralizedVoronoi::generate_vertex_chains(Chains& chains)
 {
   std::vector<std::vector<Point>> vertex_chains = {};

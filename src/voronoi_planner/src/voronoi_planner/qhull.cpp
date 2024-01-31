@@ -32,8 +32,8 @@ namespace VoronoiPlanner
 /*  */
 Qhull::Qhull(std::string flags, std::vector<Point> points)
 {
-  this->ndim = points[0].size();                 /* dimension of points */
-  this->numpoints = points.size();              /* number of points */
+  this->ndim = points[0].size();                 // dimension of points
+  this->numpoints = points.size();               // number of points
 
   this->point_arrays.push_back(points);
 
@@ -42,8 +42,6 @@ Qhull::Qhull(std::string flags, std::vector<Point> points)
 
   coordT* coord = NULL;
 
-  // qhT qh_qh;                /* Qhull's data structure.  First argument of most calls */
-  // this->qh = &qh_qh;          /* Alternatively -- qhT *qh= (qhT *)malloc(sizeof(qhT)) */
   this->qh = (qhT*) malloc(sizeof(qhT));
   qh_zero(this->qh, stderr);
 
@@ -85,8 +83,7 @@ Qhull::~Qhull()
 /*  */
 void Qhull::check_active()
 {
-  if (this->qh == NULL)
-    throw std::runtime_error("Qhull instance is closed");
+  if (this->qh == NULL) throw std::runtime_error("Qhull instance is closed");
 }
 
 /*  */
@@ -109,10 +106,7 @@ void Qhull::close()
 /*  */
 std::vector<Point> Qhull::get_points()
 {
-  //if (this->point_arrays.size() == 1)
-    return this->point_arrays[0];
-  //else
-  //  return np.concatenate([x[:,:self.ndim] for x in self._point_arrays], axis=0)
+  return this->point_arrays[0];
 }
 
 /*  */
@@ -262,14 +256,6 @@ void Qhull::get_voronoi_diagram(VertexChain& vor_vertices,
     voronoi_vertices.assign(startIt, endIt);
   }
 
-  // std::cout this_->ridge_vertices
-  // int kk = 1;
-  // for (auto ele : this->ridge_vertices)
-  // {
-  //   std::cout << kk++ << ": " << ele[0] << " " << ele[1] << std::endl;
-  // }
-
-
   vor_vertices = voronoi_vertices;
   vor_ridge_points = this->ridge_points;
   vor_ridge_vertices = this->ridge_vertices;
@@ -350,9 +336,7 @@ void visit_voronoi(qhT* _qh, FILE* ptr, vertexT* vertex, vertexT* vertexA, setT*
   {
     ix = ((facetT*) centers->e[i].p)->visitid - 1;
     cur_vertices[i] = ix;
-    //std::cout << ix << " ";
   }
-  //std::cout << std::endl;
   qh->ridge_vertices.push_back(cur_vertices);
   qh->set_nridges(qh->get_nridges() + 1);
 }
@@ -368,46 +352,48 @@ void qh_order_vertexneighbors_nd(qhT* qh, int nd, vertexT* vertex)
 
 /*  */
 int qh_new_qhull_scipy(qhT* qh, int dim, int numpoints, coordT* points, boolT ismalloc,
-                char* qhull_cmd, FILE* outfile, FILE* errfile, coordT *feaspoint)
+                       char* qhull_cmd, FILE* outfile, FILE* errfile, coordT *feaspoint)
 {
   int exitcode, hulldim;
   boolT new_ismalloc;
   coordT *new_points;
 
-  if(!errfile){
-    errfile= stderr;
-  }
-  if (!qh->qhmem.ferr) {
-    qh_meminit(qh, errfile);
-  } else {
-    qh_memcheck(qh);
-  }
-  if (strncmp(qhull_cmd, "qhull ", (size_t)6) && strcmp(qhull_cmd, "qhull") != 0) {
+  if (!errfile) errfile = stderr;
+
+  if (!qh->qhmem.ferr) qh_meminit(qh, errfile);
+  else qh_memcheck(qh);
+
+  if (strncmp(qhull_cmd, "qhull ", (size_t)6) && strcmp(qhull_cmd, "qhull") != 0)
+  {
     qh_fprintf(qh, errfile, 6186, "qhull error (qh_new_qhull): start qhull_cmd argument with \"qhull \" or set to \"qhull\"\n");
     return qh_ERRinput;
   }
+
   qh_initqhull_start(qh, NULL, outfile, errfile);
-  if(numpoints==0 && points==NULL){
-      trace1((qh, qh->ferr, 1047, "qh_new_qhull: initialize Qhull\n"));
-      return 0;
+  if(numpoints == 0 && points == NULL)
+  {
+    trace1((qh, qh->ferr, 1047, "qh_new_qhull: initialize Qhull\n"));
+    return 0;
   }
+
   trace1((qh, qh->ferr, 1044, "qh_new_qhull: build new Qhull for %d %d-d points with %s\n", numpoints, dim, qhull_cmd));
-  exitcode= setjmp(qh->errexit);
-  if (!exitcode){
-    qh->NOerrexit= False;
+  exitcode = setjmp(qh->errexit);
+  if (!exitcode)
+  {
+    qh->NOerrexit = False;
     qh_initflags(qh, qhull_cmd);
-    if (qh->DELAUNAY)
-      qh->PROJECTdelaunay= True;
-    if (qh->HALFspace) {
-      /* points is an array of halfspaces,
-         the last coordinate of each halfspace is its offset */
-      hulldim= dim-1;
-      if(feaspoint)
+    if (qh->DELAUNAY) qh->PROJECTdelaunay= True;
+    if (qh->HALFspace)
+    {
+      /* points is an array of halfspaces, the last coordinate of each halfspace is its offset */
+      hulldim = dim - 1;
+      if (feaspoint)
       {
         coordT* coords;
         coordT* value;
         int i;
-        if (!(qh->feasible_point= (pointT*)qh_malloc(hulldim * sizeof(coordT)))) {
+        if (!(qh->feasible_point= (pointT*)qh_malloc(hulldim * sizeof(coordT))))
+        {
           qh_fprintf(qh, qh->ferr, 6079, "qhull error: insufficient memory for 'Hn,n,n'\n");
           qh_errexit(qh, qh_ERRmem, NULL, NULL);
         }
@@ -422,11 +408,12 @@ int qh_new_qhull_scipy(qhT* qh, int dim, int numpoints, coordT* points, boolT is
       {
         qh_setfeasible(qh, hulldim);
       }
-      new_points= qh_sethalfspace_all(qh, dim, numpoints, points, qh->feasible_point);
-      new_ismalloc= True;
-      if (ismalloc)
-        qh_free(points);
-    }else {
+      new_points = qh_sethalfspace_all(qh, dim, numpoints, points, qh->feasible_point);
+      new_ismalloc = True;
+      if (ismalloc) qh_free(points);
+    }
+    else
+    {
       hulldim= dim;
       new_points= points;
       new_ismalloc= ismalloc;
@@ -434,15 +421,14 @@ int qh_new_qhull_scipy(qhT* qh, int dim, int numpoints, coordT* points, boolT is
     qh_init_B(qh, new_points, numpoints, hulldim, new_ismalloc);
     qh_qhull(qh);
     qh_check_output(qh);
-    if (outfile) {
-      qh_produce_output(qh);
-    }else {
-      qh_prepare_output(qh);
-    }
+
+    if (outfile) qh_produce_output(qh);
+    else qh_prepare_output(qh);
+
     if (qh->VERIFYoutput && !qh->FORCEoutput && !qh->STOPadd && !qh->STOPcone && !qh->STOPpoint)
       qh_check_points(qh);
   }
-  qh->NOerrexit= True;
+  qh->NOerrexit = True;
   return exitcode;
 } /* new_qhull */
 

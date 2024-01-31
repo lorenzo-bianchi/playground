@@ -4,3 +4,4 @@
     plot_voronoi: true
     point_distance: 0.015
     rdp_epsilon: 0.0064
+    save_log: false

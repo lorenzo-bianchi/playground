@@ -28,72 +28,19 @@
 
 namespace VoronoiPlanner
 {
-
-/*
-ridge_vecritces in ingresso al costruttore è un array di coppie di punti
-    ridge_vertices = []
-    [ 44  45]
-    [ 46  47]
-    [ 29  30]
-    ...
-  ]
-
-nel dizionario può accadere idx : [a], idx : [a, b] o idx : [a, b, c], forse di più
-
-*/
-
 /*  */
 IndexDict::IndexDict(RidgeVertices& vec)
 {
   DictT dict = this->generate(vec, false);
   DictT rdict = this->generate(vec, true);
-  // corretti a meno dell'ordine di inserimento, es. 43 --> [44, 45] invece di [45, 44]
-
-  // // print dict
-  // std::cout << "\n\ndict" << std::endl;
-  // for (auto entry : dict)
-  // {
-  //   NodeT key = entry.first;
-  //   Chain value = entry.second;
-  //   std::cout << key << " : ";
-  //   for (NodeT ele : value)
-  //   {
-  //     std::cout << ele << " ";
-  //   }
-  //   std::cout << std::endl;
-  // }
-  // // print rdict
-  // std::cout << "\n\nrdict" << std::endl;
-  // for (auto entry : rdict)
-  // {
-  //   NodeT key = entry.first;
-  //   Chain value = entry.second;
-  //   std::cout << key << " : ";
-  //   for (NodeT ele : value)
-  //   {
-  //     std::cout << ele << " ";
-  //   }
-  //   std::cout << std::endl;
-  // }
-
-  // print dict keys
-  // std::cout << "\n\ndict keys" << std::endl;
-  // for (auto entry : dict)
-  // {
-  //   NodeT key = entry.first;
-  //   std::cout << key << " ";;
-  // }
-  // std::cout << std::endl;
 
   for (auto entry : rdict)
   {
     NodeT key = entry.first;
     Chain value = entry.second;
 
-    //std::cout << "key: " << key << std::endl;
     if (contains(dict, key))
     {
-      //std::cout << "\tkey inside: " << key << std::endl;
       for (NodeT ele : value)
       {
         if (std::find(dict[key].begin(), dict[key].end(), ele) == dict[key].end())
@@ -102,22 +49,8 @@ IndexDict::IndexDict(RidgeVertices& vec)
         }
       }
     }
-    //else dict[key] = value;
+    else dict[key] = value;
   }
-
-  // print rdict
-  // std::cout << "\n\ndict finale" << std::endl;
-  // for (auto entry : dict)
-  // {
-  //   NodeT key = entry.first;
-  //   Chain value = entry.second;
-  //   std::cout << key << " : ";
-  //   for (NodeT ele : value)
-  //   {
-  //     std::cout << ele << " ";
-  //   }
-  //   std::cout << std::endl;
-  // }
 
   this->dict = dict;
 }
@@ -127,27 +60,12 @@ DictT IndexDict::generate(RidgeVertices& vec, bool reverse)
 {
   NodeT idx = reverse ? 1 : 0;
 
-  // print vec
-  // std::cout << "vec: " << std::endl;
-  // for (auto ele : vec)
-  // {
-  //   std::cout << ele[0] << " " << ele[1] << std::endl;
-  // }
-  // std::cout << std::endl;
-
   RidgeVertices sorted = vec;
   std::stable_sort(
     sorted.begin(), sorted.end(), [idx](const RidgeVertex& a, const RidgeVertex& b)
     {
       return a[idx] < b[idx];
     });
-
-  // // print sorted
-  // std::cout << "reverse: " << reverse << ", idx " << idx <<  std::endl;
-  // for (auto ele : sorted)
-  // {
-  //   std::cout << ele[0] << " " << ele[1] << std::endl;
-  // }
 
   Chain organized;
   std::vector<NodeT> key;
@@ -170,31 +88,11 @@ DictT IndexDict::generate(RidgeVertices& vec, bool reverse)
   value.push_back(organized);
   key.push_back(current);
 
-  // print key
-  // for (auto ele : key)
-  // {
-  //   std::cout << ele << " ";
-  // }
-  // std::cout << std::endl;
-
   DictT result;
   for (size_t i = 0; i < key.size(); i++)
   {
     result[key[i]] = value[i];    // FIXME
   }
-
-  // print result
-  // for (auto entry : result)
-  // {
-  //   NodeT key = entry.first;
-  //   Chain value = entry.second;
-  //   std::cout << key << " : ";
-  //   for (NodeT ele : value)
-  //   {
-  //     std::cout << ele << " ";
-  //   }
-  //   std::cout << std::endl;
-  // }
 
   return result;
 }
@@ -210,29 +108,6 @@ bool IndexDict::contains(NodeT key)
 {
   return contains(this->dict, key);
 }
-
-/*  */
-// void IndexDict::insert(NodeT key, Chain& value)
-// {
-//   if (contains(this->dict, key))
-//   {
-//     throw std::invalid_argument("Key already exists");
-//   }
-
-//   this->dict[key] = value;
-
-//   for (NodeT ele : value)
-//   {
-//     if (contains(this->dict, ele))
-//     {
-//       this->dict[ele].push_back(key);
-//     }
-//     else
-//     {
-//       this->dict[ele] = {key};
-//     }
-//   }
-// }
 
 /*  */
 Chain IndexDict::find(NodeT key)

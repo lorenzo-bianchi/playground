@@ -97,10 +97,8 @@ namespace VoronoiPlanner
 {
 
 enum run_type {
-  // non_lined = 0,
-  // non_deleted = 1,
-  non_optimized = 2,
-  optimized = 3
+  non_optimized = 0,
+  optimized = 1
 };
 
 class Line
@@ -151,7 +149,6 @@ class IndexDict
 {
 public:
   IndexDict(RidgeVertices& vec);
-  // void insert(NodeT key, Chain& value);
   bool contains(NodeT key);
   Chain find(NodeT key);
   std::vector<std::pair<NodeT, Chain>> items();
@@ -338,12 +335,14 @@ private:
   // rclcpp::Publisher<voronoi_planner_msgs::msg::VoronoiPlanner>::SharedPtr joy_pub_;
 
   /* Utility routines */
+  void save_log();
 
   /* Node parameters */
   double distance_tresh_;
   bool plot_voronoi_;
   double point_distance_;
   double rdp_epsilon_;
+  bool save_log_;
 
   /* Synchronization primitives for internal update operations */
   std::atomic<bool> stop_thread;
@@ -355,7 +354,7 @@ private:
 
   /* Internal state variables */
   std::vector<std::vector<std::vector<double>>> polygons;
-
+  GeneralizedVoronoi gen_vor;
 };
 
 } // namespace VoronoiPlanner

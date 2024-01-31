@@ -43,3 +43,11 @@ params:
     constraints: "Can be changed."
     read_only: false
     var_name: rdp_epsilon_
+
+  save_log:
+    type: bool
+    default_value: false
+    description: "Save log."
+    constraints: "Cannot be changed."
+    read_only: true
+    var_name: save_log_
