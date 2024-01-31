@@ -38,7 +38,7 @@ ridge_vecritces in ingresso al costruttore è un array di coppie di punti
     ...
   ]
 
-nel dizionario può accadere idx : [a], idx : [a, b] o idx : [a, b], forse di più
+nel dizionario può accadere idx : [a], idx : [a, b] o idx : [a, b, c], forse di più
 
 */
 
@@ -49,7 +49,7 @@ IndexDict::IndexDict(RidgeVertices& vec)
   DictT rdict = this->generate(vec, true);
   // corretti a meno dell'ordine di inserimento, es. 43 --> [44, 45] invece di [45, 44]
 
-  // print dict
+  // // print dict
   // std::cout << "\n\ndict" << std::endl;
   // for (auto entry : dict)
   // {
@@ -102,7 +102,7 @@ IndexDict::IndexDict(RidgeVertices& vec)
         }
       }
     }
-    else dict[key] = value;
+    //else dict[key] = value;
   }
 
   // print rdict
@@ -127,15 +127,23 @@ DictT IndexDict::generate(RidgeVertices& vec, bool reverse)
 {
   NodeT idx = reverse ? 1 : 0;
 
+  // print vec
+  // std::cout << "vec: " << std::endl;
+  // for (auto ele : vec)
+  // {
+  //   std::cout << ele[0] << " " << ele[1] << std::endl;
+  // }
+  // std::cout << std::endl;
+
   RidgeVertices sorted = vec;
-  std::sort(
-    sorted.begin(), sorted.end(), [idx](RidgeVertex& a, RidgeVertex& b)
+  std::stable_sort(
+    sorted.begin(), sorted.end(), [idx](const RidgeVertex& a, const RidgeVertex& b)
     {
       return a[idx] < b[idx];
     });
 
-  // print sorted
-  // std::cout << "reverse: " << reverse << ", idx" << idx <<  std::endl;
+  // // print sorted
+  // std::cout << "reverse: " << reverse << ", idx " << idx <<  std::endl;
   // for (auto ele : sorted)
   // {
   //   std::cout << ele[0] << " " << ele[1] << std::endl;
@@ -169,10 +177,10 @@ DictT IndexDict::generate(RidgeVertices& vec, bool reverse)
   // }
   // std::cout << std::endl;
 
-  std::map<NodeT, Chain> result;
+  DictT result;
   for (size_t i = 0; i < key.size(); i++)
   {
-    result[key[i]] = value[i];
+    result[key[i]] = value[i];    // FIXME
   }
 
   // print result
@@ -204,27 +212,27 @@ bool IndexDict::contains(NodeT key)
 }
 
 /*  */
-void IndexDict::insert(NodeT key, Chain& value)
-{
-  if (contains(this->dict, key))
-  {
-    throw std::invalid_argument("Key already exists");
-  }
+// void IndexDict::insert(NodeT key, Chain& value)
+// {
+//   if (contains(this->dict, key))
+//   {
+//     throw std::invalid_argument("Key already exists");
+//   }
 
-  this->dict[key] = value;
+//   this->dict[key] = value;
 
-  for (NodeT ele : value)
-  {
-    if (contains(this->dict, ele))
-    {
-      this->dict[ele].push_back(key);
-    }
-    else
-    {
-      this->dict[ele] = {key};
-    }
-  }
-}
+//   for (NodeT ele : value)
+//   {
+//     if (contains(this->dict, ele))
+//     {
+//       this->dict[ele].push_back(key);
+//     }
+//     else
+//     {
+//       this->dict[ele] = {key};
+//     }
+//   }
+// }
 
 /*  */
 Chain IndexDict::find(NodeT key)

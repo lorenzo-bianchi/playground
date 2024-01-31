@@ -165,23 +165,8 @@ void Qhull::get_voronoi_diagram(VertexChain& vor_vertices,
   this->ridge_points = RidgeVertices(10);
   this->ridge_vertices = {};
 
-  std::cout << "this->ridge_points 1: " << std::endl;
-  for (auto ele : this->ridge_points)
-  {
-    std::cout << ele[0] << " " << ele[1] << std::endl;
-  }
-  std::cout << std::endl;
-
   // io_r.c
   qh_eachvoronoi_all(this->qh, (FILE*) this, &visit_voronoi, this->qh[0].UPPERdelaunay, qh_RIDGEall, 1);
-
-  std::cout << "this->ridge_points 2: " << std::endl;
-  std::cout << "size: " << this->ridge_points.size() << std::endl;
-  for (auto ele : this->ridge_points)
-  {
-    std::cout << ele[0] << " " << ele[1] << std::endl;
-  }
-  std::cout << std::endl;
 
   {
     auto startIt = this->ridge_points.begin();
@@ -271,18 +256,18 @@ void Qhull::get_voronoi_diagram(VertexChain& vor_vertices,
     facet = facet->next;
   }
 
-{
-  auto startIt = voronoi_vertices.begin();
-  auto endIt = voronoi_vertices.begin() + nvoronoi_vertices;
-  voronoi_vertices.assign(startIt, endIt);
-}
+  {
+    auto startIt = voronoi_vertices.begin();
+    auto endIt = voronoi_vertices.begin() + nvoronoi_vertices;
+    voronoi_vertices.assign(startIt, endIt);
+  }
 
-//print this->ridge_points
-std::cout << "this->ridge_points last: " << std::endl;
-for (auto ele : this->ridge_points)
-{
-  std::cout << ele[0] << " " << ele[1] << std::endl;
-}
+  // std::cout this_->ridge_vertices
+  // int kk = 1;
+  // for (auto ele : this->ridge_vertices)
+  // {
+  //   std::cout << kk++ << ": " << ele[0] << " " << ele[1] << std::endl;
+  // }
 
 
   vor_vertices = voronoi_vertices;
@@ -336,7 +321,7 @@ void visit_voronoi(qhT* _qh, FILE* ptr, vertexT* vertex, vertexT* vertexA, setT*
   Qhull* qh = (Qhull*) ptr;
   int point1, point2, ix;
 
-  if (qh->get_nridges() >= (int) qh->get_ridge_points().size())
+  if (qh->get_nridges() >= (int) qh->ridge_points.size())
   {
     try
     {
@@ -353,14 +338,11 @@ void visit_voronoi(qhT* _qh, FILE* ptr, vertexT* vertex, vertexT* vertexA, setT*
   point1 = qh_pointid(_qh, vertex->point);
   point2 = qh_pointid(_qh, vertexA->point);
 
-  auto rpoints = qh->get_ridge_points();
+  auto& rpoints = qh->ridge_points;
 
-  // if (rpoints.size() > 0)
-  {
-    int* p = (int*) rpoints.data();
-    p[2*qh->get_nridges() + 0] = point1;
-    p[2*qh->get_nridges() + 1] = point2;
-  }
+  int* p = (int*) rpoints.data();
+  p[2*qh->get_nridges() + 0] = point1;
+  p[2*qh->get_nridges() + 1] = point2;
 
   // Record which voronoi vertices constitute the ridge
   Eigen::Matrix<NodeT, 2, 1> cur_vertices;
@@ -368,7 +350,9 @@ void visit_voronoi(qhT* _qh, FILE* ptr, vertexT* vertex, vertexT* vertexA, setT*
   {
     ix = ((facetT*) centers->e[i].p)->visitid - 1;
     cur_vertices[i] = ix;
+    //std::cout << ix << " ";
   }
+  //std::cout << std::endl;
   qh->ridge_vertices.push_back(cur_vertices);
   qh->set_nridges(qh->get_nridges() + 1);
 }

@@ -1,5 +1,6 @@
 /voronoi_planner:
   ros__parameters:
     distance_tresh: 0.02
+    plot_voronoi: true
     point_distance: 0.015
     rdp_epsilon: 0.0064

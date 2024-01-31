@@ -92,9 +92,9 @@ namespace VoronoiPlanner
   {
     for (int i = 0; i < (int) vec.size(); i++)
     {
-      if (vec[i] >= elem) return i;
+      if (vec[i] > elem) return i;
     }
-    return -1;
+    return vec.size();
   }
 
   /*  */
@@ -113,9 +113,7 @@ namespace VoronoiPlanner
   }
 
   /*  */
-  bool is_intersecting(
-    std::vector<Point>& line1,
-    std::vector<Point>& line2)
+  bool is_intersecting(std::vector<Point>& line1, std::vector<Point>& line2)
   {
     int ccw1 = counter_clockwise(line1[0], line1[1], line2[0]);
     int ccw2 = counter_clockwise(line1[0], line1[1], line2[1]);
@@ -123,12 +121,9 @@ namespace VoronoiPlanner
     if (ccw1 * ccw2 < 0.0)
     {
       int ccw1 = counter_clockwise(line2[0], line2[1], line1[0]);
-      int ccw2 = counter_clockwise(line2[0], line2[1], line2[1]);
+      int ccw2 = counter_clockwise(line2[0], line2[1], line1[1]);
 
-      if (ccw1 * ccw2 < 0.0)
-      {
-        return true;
-      }
+      if (ccw1 * ccw2 < 0.0) return true;
     }
     return false;
   }
@@ -143,10 +138,10 @@ namespace VoronoiPlanner
 
   // Line class implementation
   /*  */
-  Line::Line() : point_distance(0.015/*point_distance_*/) {}
+  Line::Line() : point_distance(0.2/*0.015*//*point_distance_*/) {}
 
   /*  */
-  Line::Line(std::vector<Point> inputPoints) : point_distance(0.015/*point_distance_*/), points(inputPoints)
+  Line::Line(std::vector<Point> inputPoints) : point_distance(0.2/*0.015*//*point_distance_*/), points(inputPoints)
   {
     if (points.size() != 2) throw std::invalid_argument("Line must have 2 points.");
   }

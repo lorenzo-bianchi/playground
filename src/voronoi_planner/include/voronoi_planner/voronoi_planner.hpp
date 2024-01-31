@@ -151,7 +151,7 @@ class IndexDict
 {
 public:
   IndexDict(RidgeVertices& vec);
-  void insert(NodeT key, Chain& value);
+  // void insert(NodeT key, Chain& value);
   bool contains(NodeT key);
   Chain find(NodeT key);
   std::vector<std::pair<NodeT, Chain>> items();
@@ -286,8 +286,8 @@ private:
   void delete_unfinished();
   Chain unfinished_vertices();
   Chain ridges_to_delete(Chain& vertex_vec);
-  void delete_vertex(Chain& to_delete);
-  void delete_ridge(Chain& to_delete);
+  void delete_vertex(Chain to_delete);
+  void delete_ridge(Chain to_delete);
   void reorganize_ridge(Chain& deleted_vertices);
   Chain vertices_in_polygon();
 };
@@ -341,6 +341,7 @@ private:
 
   /* Node parameters */
   double distance_tresh_;
+  bool plot_voronoi_;
   double point_distance_;
   double rdp_epsilon_;
 

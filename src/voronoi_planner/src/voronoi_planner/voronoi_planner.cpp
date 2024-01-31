@@ -138,7 +138,7 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   gen_vor.add_boundaries(boundaries);
   Result vor_result;
 
-  gen_vor.run(run_type::non_optimized, false, vor_result);
+  gen_vor.run(run_type::optimized, plot_voronoi_, vor_result);
 
   auto endTime = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
@@ -284,7 +284,6 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   outputFile << "End Vor.vertices" << std::endl << std::endl;
 
   // get vor.ridge_points
-  std::cout << vor.ridge_points[1000] << std::endl;
   outputFile << "Vor.ridge_points" << std::endl;
   outputFile << vor.ridge_points.size() << std::endl;
   for (auto & p : vor.ridge_points)
