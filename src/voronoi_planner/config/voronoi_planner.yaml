@@ -1,7 +1,12 @@
 /voronoi_planner:
   ros__parameters:
     distance_tresh: 0.02
-    plot_voronoi: true
+    move_coefficient: 0.15
+    plot_voronoi: false
     point_distance: 0.015
+    points_tresh: 0.1
     rdp_epsilon: 0.0064
+    sample_points: 100
     save_log: false
+    spline_bc_order: 2
+    spline_bc_values: [0.0, 0.0, 0.0]

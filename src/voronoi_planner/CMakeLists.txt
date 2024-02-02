@@ -29,6 +29,7 @@ find_package(params_manager REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+find_package(toppra)
 
 # Generate parameters source code
 generate_init_parameters(
@@ -52,7 +53,8 @@ target_link_libraries(voronoi_planner
   qhullcpp
   qhull_r
   Python3::Python
-  Python3::Module)
+  Python3::Module
+  toppra::toppra)
 ament_target_dependencies(voronoi_planner
   dua_app_management
   dua_node

@@ -134,10 +134,16 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //                    { 0.0, -0.5}},
   //                  };
 
-  Line b1 = Line({{ 1.0, -1.0}, { 1.0,  1.0}});
-  Line b2 = Line({{ 1.0,  1.0}, {-1.0,  1.0}});
-  Line b3 = Line({{-1.0,  1.0}, {-1.0, -1.0}});
-  Line b4 = Line({{-1.0, -1.0}, { 1.0, -1.0}});
+  // Line b1 = Line({{ 1.0, -1.0}, { 1.0,  1.0}});
+  // Line b2 = Line({{ 1.0,  1.0}, {-1.0,  1.0}});
+  // Line b3 = Line({{-1.0,  1.0}, {-1.0, -1.0}});
+  // Line b4 = Line({{-1.0, -1.0}, { 1.0, -1.0}});
+
+  Line b1 = Line({{0.0, 0.0}, {1.0, 0.0}});
+  Line b2 = Line({{1.0, 0.0}, {1.0, 1.0}});
+  Line b3 = Line({{1.0, 1.0}, {0.0, 1.0}});
+  Line b4 = Line({{0.0, 0.0}, {0.0, 1.0}});
+
   std::vector<Line> boundaries = {b1, b2, b3, b4};
 
   auto startTime = std::chrono::high_resolution_clock::now();
@@ -147,17 +153,181 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   gen_vor.add_boundaries(boundaries);
   Result vor_result;
 
+  // Compute Voronoi graph
   gen_vor.run(run_type::optimized, plot_voronoi_, vor_result);
+
+  // Run A* algorithm
+  Point start = {0.05, 0.05};
+  Point end = {0.9, 0.9};
+
+  Astar astar = Astar(vor_result, start, end);
+  std::vector<Point> path = astar.run();
+  if (plot_voronoi_) astar.generate_plot();
+
+  // Add z component to path points
+  std::vector<Eigen::Vector3d> path3d;
+  path3d.resize(path.size());
+  for (size_t i = 0; i < path.size(); i++)
+  {
+    path3d[i] = {path[i][0], path[i][1], 0.0};
+  }
+
+  // Filter out points too close
+  size_t i = 0;
+  while (i < path3d.size() - 1)
+  {
+    if ((path3d[i] - path3d[i+1]).norm() < points_tresh_)
+      path3d.erase(path3d.begin() + i + 1);
+    else
+      i++;
+  }
+
+  // Move points
+  auto path3d_orig = path3d;
+  for (size_t i = 1; i < path3d.size()-1; i++)
+  {
+    Eigen::Vector3d a = path3d[i-1];
+    Eigen::Vector3d b = path3d[i];
+    Eigen::Vector3d c = path3d[i+1];
+
+    Eigen::Vector3d ba = (a - b);
+    Eigen::Vector3d bc = (c - b);
+
+    Eigen::Vector3d bis = ba + bc;
+    double norm_angle = bis.norm();
+    bis = bis / norm_angle;
+
+    path3d[i] = b + move_coefficient_ * norm_angle * bis;
+  }
+
+  // Run topp-ra
+  toppra::Vectors positions;
+  for (auto vi : path3d)
+  {
+    toppra::Vector vi_eigen(vi.size());
+    for (long int i = 0; i < vi.size(); i++) vi_eigen(i) = vi[i];
+    positions.push_back(vi_eigen);
+  }
+
+  int N = positions.size();
+  toppra::Vector times;
+  times.resize(N);
+  for (int i = 0; i < N; i++) times[i] = i / double(N-1);
+
+  toppra::BoundaryCond bc_start = toppra::BoundaryCond(spline_bc_order_, spline_bc_values_);
+  toppra::BoundaryCond bc_end = toppra::BoundaryCond(spline_bc_order_, spline_bc_values_);
+  //toppra::BoundaryCond bc = toppra::BoundaryCond("natural");  // "notaknot", "clamped", "natural", "manual
+  toppra::BoundaryCondFull bc_type{bc_start, bc_end};
+
+  toppra::PiecewisePolyPath spline = toppra::PiecewisePolyPath::CubicSpline(positions, times, bc_type);
+
+  times.resize(sample_points_);
+  for (int i = 0; i < sample_points_; i++)
+    times[i] = i / double(sample_points_-1);
+
+  // Compute useful quantities
+  toppra::Vectors pv = spline.eval(times, 0);
+  toppra::Vectors dpv = spline.eval(times, 1);
+  toppra::Vectors ddpv = spline.eval(times, 2);
+
+  // Spline length
+  double length = 0.0;
+  for (int i = 0; i < sample_points_; ++i)
+  {
+    Eigen::Vector3d p1 = pv[i];
+    Eigen::Vector3d p2 = pv[i+1];
+
+    length += (p2 - p1).norm();
+  }
+
+  // Spline curvature
+  std::vector<double> curvature;
+  curvature.resize(sample_points_);
+  double num, den;
+  for (int i = 0; i < sample_points_; ++i)
+  {
+    Eigen::Vector3d dp = dpv[i];
+    Eigen::Vector3d ddp = ddpv[i];
+
+    num = dp.cross(ddp).norm();
+    den = std::pow(dp.norm(), 3);
+    if (den < 1e-6) den = 1e-6;
+    curvature[i] = num / den;
+  }
+
+  /////////////////////////////////////////
 
   auto endTime = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
   RCLCPP_INFO(this->get_logger(), "Total time: %ld ms", duration);
 
-  // Save data on file
-  if (save_log_)
+  // Plot
+  plt::figure_size(720, 720);
+
+  std::vector<double> X, Y;
+  for (auto vector : vor_result.points)
   {
-    this->save_log();
+    X.push_back(vector[0]);
+    Y.push_back(vector[1]);
   }
+  plt::plot(X, Y, "b.");
+
+  // X.clear(); Y.clear();
+  // for (auto vector : vor_result.vertices)
+  // {
+  //   X.push_back(vector[0]);
+  //   Y.push_back(vector[1]);
+  // }
+  // plt::plot(X, Y, "yo");
+
+  X.clear(); Y.clear();
+  for (size_t i = 0; i <  vor_result.ridge_vertices.size(); i++)
+  {
+    RidgeVertex simplex = vor_result.ridge_vertices[i];
+
+    Point p1 = vor_result.vertices[simplex[0]];
+    Point p2 = vor_result.vertices[simplex[1]];
+
+    X = {p1[0], p2[0]};
+    Y = {p1[1], p2[1]};
+    plt::plot(X, Y, "m--");
+  }
+
+  X.clear(); Y.clear();
+  for (size_t i = 0; i < path3d_orig.size()-1; i++)
+  {
+    X = {path3d_orig[i][0], path3d_orig[i+1][0]};
+    Y = {path3d_orig[i][1], path3d_orig[i+1][1]};
+    plt::plot(X, Y, "yo");
+    plt::plot(X, Y, "r");
+  }
+
+  // X.clear(); Y.clear();
+  // plt::plot({start[0]}, {start[1]}, "k*");
+  // plt::plot({end[0]}, {end[1]}, "k*");
+  // for (size_t i = 0; i < path3d.size()-1; i++)
+  // {
+  //   X = {path3d[i][0], path3d[i+1][0]};
+  //   Y = {path3d[i][1], path3d[i+1][1]};
+  //   plt::plot(X, Y, "r");
+  // }
+
+  X.clear(); Y.clear();
+  for (size_t i = 0; i < pv.size()-1; i++)
+  {
+    X = {pv[i][0], pv[i+1][0]};
+    Y = {pv[i][1], pv[i+1][1]};
+    plt::plot(X, Y, "g");
+  }
+
+  plt::legend();
+  plt::set_aspect_equal();
+  plt::show();
+
+  throw std::invalid_argument("Error in generate_plot()");
+
+  // Save data on file
+  if (save_log_) this->save_log();
 
   RCLCPP_INFO(this->get_logger(), "Node initialized");
 }

@@ -40,7 +40,7 @@ Qhull::Qhull(std::string flags, std::vector<Point> points)
   char* options_c = new char [flags.length()+1];
   std::strcpy(options_c, flags.c_str());
 
-  coordT* coord = NULL;
+  coordT* coord = nullptr;
 
   this->qh = (qhT*) malloc(sizeof(qhT));
   qh_zero(this->qh, stderr);
@@ -51,7 +51,7 @@ Qhull::Qhull(std::string flags, std::vector<Point> points)
                                     (realT*) points.data(),
                                     false,
                                     options_c,
-                                    NULL,
+                                    nullptr,
                                     stderr,
                                     coord
                                     );
@@ -68,12 +68,12 @@ Qhull::~Qhull()
 {
   int curlong, totlong;
 
-  if (this->qh != NULL)
+  if (this->qh != nullptr)
   {
     qh_freeqhull(this->qh, qh_ALL);
     qh_memfreeshort(this->qh, &curlong, &totlong);
     free(this->qh);
-    this->qh = NULL;
+    this->qh = nullptr;
 
     if (curlong != 0 or totlong != 0)
       std::cout << "Qhull internal warning (main)" << std::endl;
@@ -83,7 +83,7 @@ Qhull::~Qhull()
 /*  */
 void Qhull::check_active()
 {
-  if (this->qh == NULL) throw std::runtime_error("Qhull instance is closed");
+  if (this->qh == nullptr) throw std::runtime_error("Qhull instance is closed");
 }
 
 /*  */
@@ -91,12 +91,12 @@ void Qhull::close()
 {
   int curlong, totlong;
 
-  if (this->qh != NULL)
+  if (this->qh != nullptr)
   {
     qh_freeqhull(this->qh, qh_ALL);
     qh_memfreeshort(this->qh, &curlong, &totlong);
     free(this->qh);
-    this->qh = NULL;
+    this->qh = nullptr;
 
     if (curlong != 0 or totlong != 0)
       throw std::runtime_error("Qhull internal warning (main)");
@@ -369,8 +369,8 @@ int qh_new_qhull_scipy(qhT* qh, int dim, int numpoints, coordT* points, boolT is
     return qh_ERRinput;
   }
 
-  qh_initqhull_start(qh, NULL, outfile, errfile);
-  if(numpoints == 0 && points == NULL)
+  qh_initqhull_start(qh, nullptr, outfile, errfile);
+  if(numpoints == 0 && points == nullptr)
   {
     trace1((qh, qh->ferr, 1047, "qh_new_qhull: initialize Qhull\n"));
     return 0;
@@ -395,7 +395,7 @@ int qh_new_qhull_scipy(qhT* qh, int dim, int numpoints, coordT* points, boolT is
         if (!(qh->feasible_point= (pointT*)qh_malloc(hulldim * sizeof(coordT))))
         {
           qh_fprintf(qh, qh->ferr, 6079, "qhull error: insufficient memory for 'Hn,n,n'\n");
-          qh_errexit(qh, qh_ERRmem, NULL, NULL);
+          qh_errexit(qh, qh_ERRmem, nullptr, nullptr);
         }
         coords = qh->feasible_point;
         value = feaspoint;

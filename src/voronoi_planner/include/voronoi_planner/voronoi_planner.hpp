@@ -60,6 +60,18 @@
 
 #include "libqhull_r/libqhull_r.h"
 
+#include <toppra/algorithm.hpp>
+#include <toppra/algorithm/toppra.hpp>
+#include <toppra/constraint.hpp>
+#include <toppra/constraint/linear_joint_acceleration.hpp>
+#include <toppra/constraint/linear_joint_velocity.hpp>
+#include <toppra/geometric_path.hpp>
+#include <toppra/geometric_path/piecewise_poly_path.hpp>
+#include <toppra/parametrizer/const_accel.hpp>
+#include <toppra/solver/seidel.hpp>
+#include <toppra/toppra.hpp>
+#include <toppra/geometric_path/piecewise_poly_path.hpp>
+
 #include "matplotlibcpp.h"
 
 #define UNUSED(arg) (void)(arg)
@@ -328,6 +340,7 @@ public:
   };
 
   std::vector<Point> run();
+  void generate_plot();
 
 private:
   std::vector<Point> result;
@@ -342,7 +355,6 @@ private:
   bool is_goal(int idx);
   int add_ridge(Point point);
   std::vector<int> find_adjacent(Point point);
-  void generate_plot2();
 };
 
 ///////////////////////////////////
@@ -395,10 +407,15 @@ private:
 
   /* Node parameters */
   double distance_tresh_;
+  double move_coefficient_;
   bool plot_voronoi_;
   double point_distance_;
+  double points_tresh_;
   double rdp_epsilon_;
+  int64_t sample_points_;
   bool save_log_;
+  int64_t spline_bc_order_;
+  std::vector<double> spline_bc_values_;
 
   /* Synchronization primitives for internal update operations */
   std::atomic<bool> stop_thread;

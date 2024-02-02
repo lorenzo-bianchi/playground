@@ -181,6 +181,8 @@ void GeneralizedVoronoi::run_optimized(Result& result)
     if (!this->optimize_line()) break;
     this->delete_unfinished();
   }
+
+  this->generate_result(result);
 }
 
 /*  */
@@ -333,70 +335,70 @@ void GeneralizedVoronoi::run(run_type type, bool plot, Result& result)
 /*  */
 void GeneralizedVoronoi::generate_plot()
 {
-  std::vector<double> X, Y, VX, VY;
-  for (auto vector : this->vor.points)
-  {
-    X.push_back(vector[0]);
-    Y.push_back(vector[1]);
-  }
-  for (auto vector : this->vor.vertices)
-  {
-    VX.push_back(vector[0]);
-    VY.push_back(vector[1]);
-  }
+  // std::vector<double> X, Y, VX, VY;
+  // for (auto vector : this->vor.points)
+  // {
+  //   X.push_back(vector[0]);
+  //   Y.push_back(vector[1]);
+  // }
+  // for (auto vector : this->vor.vertices)
+  // {
+  //   VX.push_back(vector[0]);
+  //   VY.push_back(vector[1]);
+  // }
 
-  std::vector<std::vector<Point>> finite_segments, infinite_segments;
-  int rp_size = this->vor.ridge_points.size();
-  int rv_size = this->vor.ridge_vertices.size();
-  for (int i = 0; i < std::min(rp_size, rv_size); i++)
-  {
-    RidgeVertex simplex = this->vor.ridge_vertices[i];
+  // std::vector<std::vector<Point>> finite_segments, infinite_segments;
+  // int rp_size = this->vor.ridge_points.size();
+  // int rv_size = this->vor.ridge_vertices.size();
+  // for (int i = 0; i < std::min(rp_size, rv_size); i++)
+  // {
+  //   RidgeVertex simplex = this->vor.ridge_vertices[i];
 
-    // check if all simplex values are >= 0
-    bool check = true;
-    for (auto ele : simplex)
-    {
-      if (ele < 0)
-      {
-        check = false;
-        break;
-      }
-    }
-    if (check)
-    {
-      int idx_x = simplex[0];
-      int idx_y = simplex[1];
+  //   // check if all simplex values are >= 0
+  //   bool check = true;
+  //   for (auto ele : simplex)
+  //   {
+  //     if (ele < 0)
+  //     {
+  //       check = false;
+  //       break;
+  //     }
+  //   }
+  //   if (check)
+  //   {
+  //     int idx_x = simplex[0];
+  //     int idx_y = simplex[1];
 
-      if (idx_x > (int) this->vor.vertices.size() || idx_y > (int) this->vor.vertices.size())
-      {
-        throw std::invalid_argument("Error in generate_plot()");
-      }
+  //     if (idx_x > (int) this->vor.vertices.size() || idx_y > (int) this->vor.vertices.size())
+  //     {
+  //       throw std::invalid_argument("Error in generate_plot()");
+  //     }
 
-      Point p1 = this->vor.vertices[idx_x];
-      Point p2 = this->vor.vertices[idx_y];
-      finite_segments.push_back({p1, p2});
-    }
-    else
-    {
-      // infinite_segments
-    }
-  }
+  //     Point p1 = this->vor.vertices[idx_x];
+  //     Point p2 = this->vor.vertices[idx_y];
+  //     finite_segments.push_back({p1, p2});
+  //   }
+  //   else
+  //   {
+  //     // infinite_segments
+  //   }
+  // }
 
-  plt::figure_size(640, 480);
-  plt::plot(X, Y, "b.");
-  plt::plot(VX, VY, "yo");
+  // plt::figure_size(640, 480);
+  // plt::plot(X, Y, "b.");
+  // plt::plot(VX, VY, "yo");
 
-  // plot finite_segments
-  std::vector<double> x, y;
-  for (auto& segment : finite_segments)
-  {
-    x = {segment[0][0], segment[1][0]};
-    y = {segment[0][1], segment[1][1]};
-    plt::plot(x, y, "k");
-  }
-  plt::legend();
-  plt::set_aspect_equal();
-  plt::show();
+  // // plot finite_segments
+  // std::vector<double> x, y;
+  // for (auto& segment : finite_segments)
+  // {
+  //   x = {segment[0][0], segment[1][0]};
+  //   y = {segment[0][1], segment[1][1]};
+  //   plt::plot(x, y, "k");
+  // }
+  // plt::legend();
+  // plt::set_aspect_equal();
+  // plt::show();
 }
 
 /*  */
