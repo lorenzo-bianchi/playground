@@ -47,6 +47,7 @@
 #include <unistd.h>
 
 #include <dua_node/dua_node.hpp>
+#include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "libqhullcpp/RboxPoints.h"
@@ -73,6 +74,8 @@
 #include <toppra/geometric_path/piecewise_poly_path.hpp>
 
 #include "matplotlibcpp.h"
+
+#include <random>
 
 #define UNUSED(arg) (void)(arg)
 #define EPSILON 1e-6
@@ -104,6 +107,7 @@ typedef std::vector<RidgeVertex> RidgeVertices;
 typedef std::vector<Point> VertexChain;
 typedef std::vector<VertexChain> VertexChains;
 typedef std::map<int, Chain> Dict;
+typedef Eigen::Matrix<bool, 50, 100> OccupancyGrid;
 
 namespace VoronoiPlanner
 {
@@ -154,10 +158,10 @@ struct Result
   std::vector<Triangle> triangles;
   std::vector<Line> boundaries;
   std::vector<Point> points;
-  std::vector<Point> points_polygon;
+  // std::vector<Point> points_polygon;
   VertexChain vertices;
   RidgeVertices ridge_vertices;
-  Chains chains;
+  // Chains chains;
 };
 
 class IndexDict
@@ -281,6 +285,8 @@ private:
   std::vector<Point> boundary_lined_points;
   std::vector<Point> line_lined_points;
 
+  std::vector<std::pair<Point, Polygon>> polygons;
+
   Chains chains;
 
   Voronoi vor;
@@ -306,6 +312,7 @@ private:
 class Astar
 {
 public:
+  Astar() {}
   Astar(Result vor, Point start, Point end);
   void set_result(std::vector<Point> result) { this->result = result; }
   std::vector<Point> get_result() { return result; }
@@ -403,15 +410,21 @@ private:
   // rclcpp::Publisher<voronoi_planner_msgs::msg::VoronoiPlanner>::SharedPtr joy_pub_;
 
   /* Utility routines */
+  void plot_voronoi();
   void save_log();
+  void polys_from_grid();
 
   /* Node parameters */
   double distance_tresh_;
+  double line_increase_;
   double move_coefficient_;
+  std::vector<int64_t> plot_size_;
   bool plot_voronoi_;
   double point_distance_;
   double points_tresh_;
   double rdp_epsilon_;
+  std::vector<double> robot_goal_;
+  std::vector<double> robot_start_;
   int64_t sample_points_;
   bool save_log_;
   int64_t spline_bc_order_;
@@ -428,6 +441,19 @@ private:
   /* Internal state variables */
   std::vector<std::vector<std::vector<double>>> polygons;
   GeneralizedVoronoi gen_vor;
+  Result vor_result;
+  std::vector<Point> path;
+  std::vector<Eigen::Vector3d> path3d;
+  std::vector<Eigen::Vector3d> path3d_orig;
+  toppra::Vectors pv;
+  toppra::Vectors dpv;
+  toppra::Vectors ddpv;
+  toppra::Vector times;
+  std::vector<double> curvature;
+  double length;
+  Point start;
+  Point goal;
+  Astar astar;
 };
 
 } // namespace VoronoiPlanner

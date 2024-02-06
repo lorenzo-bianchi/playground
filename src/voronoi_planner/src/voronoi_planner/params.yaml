@@ -14,6 +14,17 @@ params:
     read_only: false
     var_name: distance_tresh_
 
+  line_increase:
+    type: double
+    default_value: 0.0
+    min_value: -3.0
+    max_value: 3.0
+    step: 0.0
+    description: "Coefficient for line increase."
+    constraints: "In meters. Can be changed."
+    read_only: false
+    var_name: line_increase_
+
   move_coefficient:
     type: double
     default_value: 0.0
@@ -24,6 +35,17 @@ params:
     constraints: "Can be changed."
     read_only: false
     var_name: move_coefficient_
+
+  plot_size:
+    type: integer_array
+    default_value: [0]
+    min_value: 0
+    max_value: 10000
+    step: 1
+    description: "Plot size."
+    constraints: "Can be changed."
+    read_only: false
+    var_name: plot_size_
 
   plot_voronoi:
     type: bool
@@ -43,6 +65,28 @@ params:
     constraints: "Can be changed."
     read_only: false
     var_name: point_distance_
+
+  robot_goal:
+    type: double_array
+    default_value: [0.0]
+    min_value: -100.0
+    max_value: 100.0
+    step: 0.0
+    description: "Robot goal position."
+    constraints: "Can be changed."
+    read_only: false
+    var_name: robot_goal_
+
+  robot_start:
+    type: double_array
+    default_value: [0.0]
+    min_value: -100.0
+    max_value: 100.0
+    step: 0.0
+    description: "Robot start position."
+    constraints: "Can be changed."
+    read_only: false
+    var_name: robot_start_
 
   rdp_epsilon:
     type: double

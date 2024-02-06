@@ -28,8 +28,92 @@
 
 namespace VoronoiPlanner
 {
-void VoronoiPlannerNode::save_log()
+/*  */
+void polys_from_grid(OccupancyGrid grid, std::vector<Polygon> &polygons)
+{
+  cv::Mat grid_cv(grid.rows(), grid.cols(), CV_8UC1);
+
+  std::vector<std::vector<cv::Point>> contours;
+  cv::findContours(grid_cv, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+  // print contours
+  std::cout << "Contours: " << contours.size() << std::endl;
+  for (size_t i = 0; i < contours.size(); i++)
   {
+    std::cout << "Contour " << i << ": " << contours[i].size() << std::endl;
+  }
+  
+}
+
+/*  */
+void VoronoiPlannerNode::plot_voronoi()
+{
+  plt::figure_size(plot_size_[0], plot_size_[1]);
+
+  std::vector<double> X, Y;
+  for (auto vector : vor_result.points)
+  {
+    X.push_back(vector[0]);
+    Y.push_back(vector[1]);
+  }
+  plt::plot(X, Y, "b.");
+
+  // X.clear(); Y.clear();
+  // for (auto vector : vor_result.vertices)
+  // {
+  //   X.push_back(vector[0]);
+  //   Y.push_back(vector[1]);
+  // }
+  // plt::plot(X, Y, "yo");
+
+  X.clear(); Y.clear();
+  for (size_t i = 0; i <  vor_result.ridge_vertices.size(); i++)
+  {
+    RidgeVertex simplex = vor_result.ridge_vertices[i];
+
+    Point p1 = vor_result.vertices[simplex[0]];
+    Point p2 = vor_result.vertices[simplex[1]];
+
+    X = {p1[0], p2[0]};
+    Y = {p1[1], p2[1]};
+    plt::plot(X, Y, "m--");
+  }
+
+  X.clear(); Y.clear();
+  for (size_t i = 0; i < path3d_orig.size()-1; i++)
+  {
+    X = {path3d_orig[i][0], path3d_orig[i+1][0]};
+    Y = {path3d_orig[i][1], path3d_orig[i+1][1]};
+    plt::plot(X, Y, "yo");
+    plt::plot(X, Y, "r");
+  }
+
+  // X.clear(); Y.clear();
+  // plt::plot({start[0]}, {start[1]}, "k*");
+  // plt::plot({goal[0]}, {goal[1]}, "k*");
+  // for (size_t i = 0; i < path3d.size()-1; i++)
+  // {
+  //   X = {path3d[i][0], path3d[i+1][0]};
+  //   Y = {path3d[i][1], path3d[i+1][1]};
+  //   plt::plot(X, Y, "r");
+  // }
+
+  X.clear(); Y.clear();
+  for (size_t i = 0; i < pv.size()-1; i++)
+  {
+    X = {pv[i][0], pv[i+1][0]};
+    Y = {pv[i][1], pv[i+1][1]};
+    plt::plot(X, Y, "g");
+  }
+
+  plt::legend();
+  plt::set_aspect_equal();
+  plt::show();
+}
+
+/*  */
+void VoronoiPlannerNode::save_log()
+{
   auto timestamp = std::chrono::system_clock::now();
   auto timestampInSeconds = std::chrono::duration_cast<std::chrono::seconds>(timestamp.time_since_epoch()).count();
   std::string filename = "/home/neo/workspace/logs/output_" + std::to_string(timestampInSeconds) + ".txt";

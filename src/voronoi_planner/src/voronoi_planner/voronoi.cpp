@@ -107,6 +107,23 @@ void GeneralizedVoronoi::add_boundaries(std::vector<Line>& new_boundaries)
 }
 
 /*  */
+void GeneralizedVoronoi::add_polygons(Polygons& polygons)
+{
+  for (auto& polygon : polygons)
+  {
+    Point center = {0, 0};
+    for (auto& vertex : polygon)
+    {
+      center += vertex;
+    }
+    center /= polygon.size();
+    this->polygons.push_back({center, polygon});
+
+    this->add_polygon(polygon);
+  }
+}
+
+/*  */
 void GeneralizedVoronoi::add_polygon(Polygon& polygon)
 {
   auto triangles = triangulation(polygon);
@@ -114,15 +131,6 @@ void GeneralizedVoronoi::add_polygon(Polygon& polygon)
   {
     Triangle tri = Triangle(vertices);
     this->add_triangle(tri);
-  }
-}
-
-/*  */
-void GeneralizedVoronoi::add_polygons(Polygons& polygons)
-{
-  for (auto& polygon : polygons)
-  {
-    this->add_polygon(polygon);
   }
 }
 
@@ -479,11 +487,11 @@ void GeneralizedVoronoi::generate_result(Result& result)
   result.triangles = this->triangles;
   result.boundaries = this->boundaries;
   result.points = this->vor.points;
-  result.points_polygon = this->triangle_lined_points;
+  //result.points_polygon = this->triangle_lined_points;
   result.vertices = this->vor.vertices;
   result.ridge_vertices = this->vor.ridge_vertices;
-  if (!this->chains.empty())
-    result.chains = this->chains;
+  // if (!this->chains.empty())
+  //   result.chains = this->chains;
 }
 
 /*  */

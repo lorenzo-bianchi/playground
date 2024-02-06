@@ -25,6 +25,7 @@ find_package(dua_app_management REQUIRED)
 find_package(dua_node REQUIRED)
 find_package(dua_qos REQUIRED)
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+find_package(OpenCV 4.7.0 REQUIRED)
 find_package(params_manager REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
@@ -50,6 +51,7 @@ target_include_directories(voronoi_planner PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_link_libraries(voronoi_planner
   Eigen3::Eigen
+  ${OpenCV_LIBS}
   qhullcpp
   qhull_r
   Python3::Python

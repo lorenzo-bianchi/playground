@@ -159,13 +159,40 @@ std::vector<int> Astar::find_adjacent(Point point)
   for (int i = 0; i < (int) vertices.size(); i++)
   {
     bool intersecting = false;
-    for (RidgeVertex ridge : this->vor.ridge_vertices)
+    for (RidgeVertex ridge_vertex : this->vor.ridge_vertices)
     {
-      if (i == ridge[0] || i == ridge[1]) continue;
+      if (i == ridge_vertex[0] || i == ridge_vertex[1]) continue;
 
       std::vector<Point> l1 = {point, vertices[i]};
-      std::vector<Point> l2 = {vertices[ridge[0]], vertices[ridge[1]]};
+      std::vector<Point> l2 = {vertices[ridge_vertex[0]], vertices[ridge_vertex[1]]};
       if (is_intersecting(l1, l2))
+      {
+        intersecting = true;
+        break;
+      }
+    }
+    for (Triangle tri : this->vor.triangles)
+    {
+      auto points = tri.get_points();
+
+      Point point1 = points[0];
+      Point point2 = points[1];
+      Point point3 = points[2];
+
+      std::vector<Point> l1 = {point, vertices[i]};
+
+      double k = 0.2; // TODO: line_increase_;
+      double norm21 = (point2 - point1).norm();
+      double norm32 = (point3 - point2).norm();
+      double norm13 = (point1 - point3).norm();
+      std::vector<Point> l2 = {point1 - k * (point2 - point1) / norm21,
+                               point2 + k * (point2 - point1) / norm21};
+      std::vector<Point> l3 = {point2 - k * (point3 - point2) / norm32,
+                               point3 + k * (point3 - point2) / norm32};
+      std::vector<Point> l4 = {point3 - k * (point1 - point3) / norm13,
+                               point1 + k * (point1 - point3) / norm13};
+
+      if (is_intersecting(l1, l2) || is_intersecting(l1, l3) || is_intersecting(l1, l4))
       {
         intersecting = true;
         break;
