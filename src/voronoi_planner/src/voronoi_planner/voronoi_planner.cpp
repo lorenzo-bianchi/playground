@@ -134,34 +134,34 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //                    { 0.0, -0.5}},
   //                  };
 
-  Polygons polys = {
-                    {{12.5, 0.0}, {15.0, 0.0}, {15.0, 1.5}, {12.5, 1.5}},
-                    {{19.0, 1.0}, {17.0, 1.0}, {17.0, 3.0}, {19.0, 3.0}},
-                    {{14.5, 8.0}, {19.0, 8.0}, {19.0, 9.0}, {14.5, 9.0}},
-                    {{12.0, 3.0}, {12.0, 4.5}, {13.0, 4.5}, {13.0, 4.0}, {14.0, 4.0}, {14.0, 4.5}, {15.0, 4.5}, {15.0, 3.0}},
-                    {{12.0, 5.5}, {13.0, 5.5}, {13.0, 6.0}, {14.0, 6.0}, {14.0, 5.5}, {15.0, 5.5}, {15.0, 6.5}, {12.0, 6.5}},
-                    {{3.0, 3.0}, {4.0, 3.0}, {4.0, 4.0}, {3.0, 4.0}},
-                    {{3.0, 5.0}, {4.0, 5.0}, {4.0, 6.0}, {3.0, 6.0}},
-                    {{3.0, 7.0}, {4.0, 7.0}, {4.0, 8.0}, {3.0, 8.0}},
-                    {{5.0, 3.0}, {6.0, 3.0}, {6.0, 4.0}, {5.0, 4.0}},
-                    {{5.0, 5.0}, {6.0, 5.0}, {6.0, 6.0}, {5.0, 6.0}},
-                    {{5.0, 7.0}, {6.0, 7.0}, {6.0, 8.0}, {5.0, 8.0}},
-                    {{7.0, 3.0}, {8.0, 3.0}, {8.0, 4.0}, {7.0, 4.0}},
-                    {{7.0, 6.0}, {8.0, 5.0}, {8.0, 6.0}, {7.0, 6.0}},
-                    {{7.0, 7.0}, {8.0, 7.0}, {8.0, 8.0}, {7.0, 8.0}},
-                   };
+  // Polygons polys = {
+  //                   {{12.5, 0.0}, {15.0, 0.0}, {15.0, 1.5}, {12.5, 1.5}},
+  //                   {{19.0, 1.0}, {17.0, 1.0}, {17.0, 3.0}, {19.0, 3.0}},
+  //                   {{14.5, 8.0}, {19.0, 8.0}, {19.0, 9.0}, {14.5, 9.0}},
+  //                   {{12.0, 3.0}, {12.0, 4.5}, {13.0, 4.5}, {13.0, 4.0}, {14.0, 4.0}, {14.0, 4.5}, {15.0, 4.5}, {15.0, 3.0}},
+  //                   {{12.0, 5.5}, {13.0, 5.5}, {13.0, 6.0}, {14.0, 6.0}, {14.0, 5.5}, {15.0, 5.5}, {15.0, 6.5}, {12.0, 6.5}},
+  //                   {{3.0, 3.0}, {4.0, 3.0}, {4.0, 4.0}, {3.0, 4.0}},
+  //                   {{3.0, 5.0}, {4.0, 5.0}, {4.0, 6.0}, {3.0, 6.0}},
+  //                   {{3.0, 7.0}, {4.0, 7.0}, {4.0, 8.0}, {3.0, 8.0}},
+  //                   {{5.0, 3.0}, {6.0, 3.0}, {6.0, 4.0}, {5.0, 4.0}},
+  //                   {{5.0, 5.0}, {6.0, 5.0}, {6.0, 6.0}, {5.0, 6.0}},
+  //                   {{5.0, 7.0}, {6.0, 7.0}, {6.0, 8.0}, {5.0, 8.0}},
+  //                   {{7.0, 3.0}, {8.0, 3.0}, {8.0, 4.0}, {7.0, 4.0}},
+  //                   {{7.0, 6.0}, {8.0, 5.0}, {8.0, 6.0}, {7.0, 6.0}},
+  //                   {{7.0, 7.0}, {8.0, 7.0}, {8.0, 8.0}, {7.0, 8.0}},
+  //                  };
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> distribution(5, 95);
 
   // Polygons polys;
-  // std::random_device rd;
-  // std::mt19937 gen(rd());
-  // std::uniform_int_distribution<> distribution(5, 95);
-
   // int K = 10;
   // for (int i = 1; i < K; i++)
   // {
   //   // get random number between 1 and 100
-  //   double x = distribution(gen) / 5.0;
-  //   double y = int(distribution(gen) / 2) / 5.0;
+  //   double x = distribution(gen) * grid_resolution_;
+  //   double y = int(distribution(gen) / 2) * grid_resolution_;
 
   //   double size;
   //   if (i < K/4)
@@ -192,15 +192,37 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   // Line b3 = Line({{1.0, 1.0}, {0.0, 1.0}});
   // Line b4 = Line({{0.0, 0.0}, {0.0, 1.0}});
 
-  Line b1 = Line({{ 0.0,  0.0}, {20.0,  0.0}});
-  Line b2 = Line({{20.0,  0.0}, {20.0, 10.0}});
-  Line b3 = Line({{20.0, 10.0}, { 0.0, 10.0}});
-  Line b4 = Line({{ 0.0,  0.0}, { 0.0, 10.0}});
+  OccupancyGrid grid(int(field_size_[1] / grid_resolution_), int(field_size_[0] / grid_resolution_));
+  grid.setZero();
+  grid.block(20, 20, 20, 20).setConstant(true);
+  grid.block(10, 70, 10, 10).setConstant(true);
+  grid.block(10, 70, 10, 10).setConstant(true);
+  // create variuos random obstacles
+  for (int i = 0; i < 50; i++)
+  {
+    int x = distribution(gen) / 2;
+    int y = distribution(gen);
+    grid.block(x, y, 2, 2).setConstant(true);
+  }
+
+  std::cout << grid << std::endl;
+
+  Polygons polys;
+
+  Line b1 = Line({{           0.0,            0.0}, {field_size_[0],            0.0}});
+  Line b2 = Line({{field_size_[0],            0.0}, {field_size_[0], field_size_[1]}});
+  Line b3 = Line({{field_size_[0], field_size_[1]}, {           0.0, field_size_[1]}});
+  Line b4 = Line({{           0.0,            0.0}, {           0.0, field_size_[1]}});
 
   std::vector<Line> boundaries = {b1, b2, b3, b4};
 
   auto start_time = std::chrono::high_resolution_clock::now();
+
   // Code to be timed
+  polys_from_grid(grid, polys);
+
+  auto contours_end_time = std::chrono::high_resolution_clock::now();
+
   gen_vor = GeneralizedVoronoi();
   gen_vor.add_polygons(polys);
   gen_vor.add_boundaries(boundaries);
@@ -310,10 +332,12 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   /////////////////////////////////////////
 
   auto end_time = std::chrono::high_resolution_clock::now();
-  auto duration_voronoi = std::chrono::duration_cast<std::chrono::milliseconds>(voronoi_end_time - start_time).count();
+  auto duration_contours = std::chrono::duration_cast<std::chrono::milliseconds>(contours_end_time - start_time).count();
+  auto duration_voronoi = std::chrono::duration_cast<std::chrono::milliseconds>(voronoi_end_time - contours_end_time).count();
   auto duration_astar = std::chrono::duration_cast<std::chrono::milliseconds>(astar_end_time - voronoi_end_time).count();
   auto duration_spline = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - astar_end_time).count();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+  RCLCPP_WARN(this->get_logger(), "Contours time: %ld ms", duration_contours);
   RCLCPP_WARN(this->get_logger(), "Voronoi time: %ld ms", duration_voronoi);
   RCLCPP_WARN(this->get_logger(), "A* time: %ld ms", duration_astar);
   RCLCPP_WARN(this->get_logger(), "Spline time: %ld ms", duration_spline);

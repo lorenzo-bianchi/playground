@@ -107,7 +107,7 @@ typedef std::vector<RidgeVertex> RidgeVertices;
 typedef std::vector<Point> VertexChain;
 typedef std::vector<VertexChain> VertexChains;
 typedef std::map<int, Chain> Dict;
-typedef Eigen::Matrix<bool, 50, 100> OccupancyGrid;
+typedef Eigen::Matrix<bool, -1, -1> OccupancyGrid;
 
 namespace VoronoiPlanner
 {
@@ -412,10 +412,12 @@ private:
   /* Utility routines */
   void plot_voronoi();
   void save_log();
-  void polys_from_grid();
+  void polys_from_grid(OccupancyGrid grid, Polygons &polygons);
 
   /* Node parameters */
   double distance_tresh_;
+  std::vector<double> field_size_;
+  double grid_resolution_;
   double line_increase_;
   double move_coefficient_;
   std::vector<int64_t> plot_size_;

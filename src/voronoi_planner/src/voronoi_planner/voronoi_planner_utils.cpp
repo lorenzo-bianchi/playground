@@ -29,20 +29,42 @@
 namespace VoronoiPlanner
 {
 /*  */
-void polys_from_grid(OccupancyGrid grid, std::vector<Polygon> &polygons)
+void VoronoiPlannerNode::polys_from_grid(OccupancyGrid grid, Polygons &polygons)
 {
+  // convert grid to cv::Mat
   cv::Mat grid_cv(grid.rows(), grid.cols(), CV_8UC1);
+  for (int i = 0; i < grid.rows(); i++)
+  {
+    for (int j = 0; j < grid.cols(); j++)
+    {
+      grid_cv.at<uchar>(i, j) = grid(i, j);
+    }
+  }
+
+  // print grid_cv with double for
+  for (int i = 0; i < grid.rows(); i++)
+  {
+    for (int j = 0; j < grid.cols(); j++)
+    {
+      std::cout << (int)grid_cv.at<uchar>(i, j) << " ";
+    }
+    std::cout << std::endl;
+  }
+
 
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(grid_cv, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-  // print contours
-  std::cout << "Contours: " << contours.size() << std::endl;
-  for (size_t i = 0; i < contours.size(); i++)
+  for (auto contour : contours)
   {
-    std::cout << "Contour " << i << ": " << contours[i].size() << std::endl;
+    Polygon polygon;
+    for (auto point : contour)
+    {
+      polygon.push_back(Point(point.x * grid_resolution_, point.y * grid_resolution_));
+    }
+    polygons.push_back(polygon);
   }
-  
+
 }
 
 /*  */

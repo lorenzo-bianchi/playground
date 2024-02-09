@@ -91,6 +91,8 @@ std::vector<Point> Astar::run()
     result.push_back(vertices[node->get_idx()]);
     node = node->get_parent();
   }
+
+  if (result.empty()) throw std::invalid_argument("No path found in Astar::run");
   std::reverse(result.begin(), result.end());
   this->set_result(result);
   return result;

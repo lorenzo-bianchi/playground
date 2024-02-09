@@ -14,6 +14,28 @@ params:
     read_only: false
     var_name: distance_tresh_
 
+  grid_resolution:
+    type: double
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 10.0
+    step: 0.0
+    description: "Grid resolution."
+    constraints: "In meters. Can be changed."
+    read_only: false
+    var_name: grid_resolution_
+
+  field_size:
+    type: double_array
+    default_value: [0.0]
+    min_value: -100.0
+    max_value: 100.0
+    step: 0.0
+    description: "Field size."
+    constraints: "In meters. Cannot be changed."
+    read_only: true
+    var_name: field_size_
+
   line_increase:
     type: double
     default_value: 0.0
