@@ -29,6 +29,146 @@
 namespace VoronoiPlanner
 {
 /*  */
+double VoronoiPlannerNode::spline_length(toppra::Vectors s, int64_t sample_points)
+{
+  double length = 0.0;
+  for (int i = 0; i < sample_points-1; ++i)
+  {
+    Eigen::Vector3d p1 = s[i];
+    Eigen::Vector3d p2 = s[i+1];
+
+    length += (p2 - p1).norm();
+  }
+  return length;
+}
+
+/*  */
+void VoronoiPlannerNode::spline_curvature(toppra::Vectors ds,
+                                          toppra::Vectors dds,
+                                          int64_t sample_points,
+                                          std::vector<double> &curvature)
+{
+  curvature.resize(sample_points);
+  double num, den;
+  for (int i = 0; i < sample_points; ++i)
+  {
+    Eigen::Vector3d dp = ds[i];
+    Eigen::Vector3d ddp = dds[i];
+
+    num = dp.cross(ddp).norm();
+    den = std::pow(dp.norm(), 3);
+    if (den < 1e-6) den = 1e-6;
+    curvature[i] = num / den;
+  }
+}
+
+/*  */
+void VoronoiPlannerNode::simple_cycles(Result vor_result)
+{
+  size_t n_nodes = 21;
+  vor_result.ridge_vertices = {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {8, 9}, {9, 10}, {10, 11}, {11, 12}, {16, 17}, {17, 18}, {18, 19}, {19, 20}, {0, 5}, {5, 8}, {8, 13}, {13, 16}, {2, 6}, {6, 10}, {10, 14}, {14, 18}, {4, 7}, {7, 12}, {12, 15}, {15, 20}};
+
+  // size_t n_nodes = vor_result.ridge_vertices.size();
+
+  std::vector<std::vector<int>> adj(n_nodes);
+  for (const Eigen::Vector2i& edge : vor_result.ridge_vertices)
+  {
+    adj[edge[0]].push_back(edge[1]);
+    adj[edge[1]].push_back(edge[0]);
+  }
+
+  std::vector<int> nodes;
+  for (size_t i = 0; i < n_nodes; i++)
+  {
+    nodes.push_back(i);
+  }
+
+  while (!nodes.empty())
+  {
+    int starting_node = nodes[0];
+
+    if (adj[starting_node].size() < 2)
+    {
+      for (const int& child : adj[starting_node])
+      {
+        adj[starting_node].erase(std::remove(adj[starting_node].begin(), adj[starting_node].end(), child), adj[starting_node].end());
+        adj[child].erase(std::remove(adj[child].begin(), adj[child].end(), starting_node), adj[child].end());
+      }
+      nodes.erase(std::remove(nodes.begin(), nodes.end(), starting_node), nodes.end());
+      continue;
+    }
+
+    int next_node = adj[starting_node][0];
+
+    std::vector<bool> visited(n_nodes, false);
+
+    // find_simple_cycle
+    std::vector<int> simple_cycle;
+    std::vector<int> parents = std::vector<int>(n_nodes, 0);
+
+    std::vector<int> q;
+    q.push_back(starting_node);
+    bool ok = true;
+
+    while (!q.empty())
+    {
+      int node = q[0];
+      q.erase(q.begin());
+      visited[node] = true;
+
+      for (const int& child : adj[node])
+      {
+        if (node == starting_node and child == next_node) continue;
+
+        if (visited[child] == false)
+        {
+          parents[child] = node;
+
+          if (child == next_node)
+          {
+            ok = false;
+            break;
+          }
+
+          q.push_back(child);
+          visited[child] = true;
+        }
+      }
+
+      if (!ok) break;
+    }
+
+    simple_cycle.push_back(starting_node);
+    int x = next_node;
+
+    while (x != starting_node)
+    {
+      simple_cycle.push_back(x);
+      x = parents[x];
+    }
+
+    //print simple_cycles
+    std::cout << "Simple cycle: ";
+    for (const int& node : simple_cycle)
+    {
+      std::cout << node << " ";
+    }
+    std::cout << std::endl;
+
+    //
+
+    std::vector<int> neighbours = adj[starting_node];
+    for (const int& child : neighbours)
+    {
+      adj[starting_node].erase(std::remove(adj[starting_node].begin(), adj[starting_node].end(), child), adj[starting_node].end());
+      adj[child].erase(std::remove(adj[child].begin(), adj[child].end(), starting_node), adj[child].end());
+    }
+
+    nodes.erase(std::remove(nodes.begin(), nodes.end(), starting_node), nodes.end());
+  }
+}
+
+/*  */
 void VoronoiPlannerNode::polys_from_grid(OccupancyGrid grid, Polygons &polygons)
 {
   // convert grid to cv::Mat
@@ -42,23 +182,23 @@ void VoronoiPlannerNode::polys_from_grid(OccupancyGrid grid, Polygons &polygons)
   }
 
   // print grid_cv with double for
-  for (int i = 0; i < grid.rows(); i++)
-  {
-    for (int j = 0; j < grid.cols(); j++)
-    {
-      std::cout << (int)grid_cv.at<uchar>(i, j) << " ";
-    }
-    std::cout << std::endl;
-  }
+  // for (int i = 0; i < grid.rows(); i++)
+  // {
+  //   for (int j = 0; j < grid.cols(); j++)
+  //   {
+  //     std::cout << (int)grid_cv.at<uchar>(i, j) << " ";
+  //   }
+  //   std::cout << std::endl;
+  // }
 
 
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(grid_cv, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-  for (auto contour : contours)
+  for (const auto& contour : contours)
   {
     Polygon polygon;
-    for (auto point : contour)
+    for (const auto& point : contour)
     {
       polygon.push_back(Point(point.x * grid_resolution_, point.y * grid_resolution_));
     }
@@ -73,7 +213,7 @@ void VoronoiPlannerNode::plot_voronoi()
   plt::figure_size(plot_size_[0], plot_size_[1]);
 
   std::vector<double> X, Y;
-  for (auto vector : vor_result.points)
+  for (auto& vector : vor_result.points)
   {
     X.push_back(vector[0]);
     Y.push_back(vector[1]);
@@ -81,7 +221,7 @@ void VoronoiPlannerNode::plot_voronoi()
   plt::plot(X, Y, "b.");
 
   // X.clear(); Y.clear();
-  // for (auto vector : vor_result.vertices)
+  // for (auto& vector : vor_result.vertices)
   // {
   //   X.push_back(vector[0]);
   //   Y.push_back(vector[1]);
@@ -145,7 +285,7 @@ void VoronoiPlannerNode::save_log()
   auto points = gen_vor.get_points();
   outputFile << "Points:" << std::endl;
   outputFile << points.size() << std::endl;
-  for (auto & p : points)
+  for (auto& p : points)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }
@@ -155,7 +295,7 @@ void VoronoiPlannerNode::save_log()
   auto pts = gen_vor.get_lines();
   outputFile << "Lines:" << std::endl;
   outputFile << pts.size() << std::endl;
-  for (auto & p : pts)
+  for (auto& p : pts)
   {
     auto t = p.get_points();
     outputFile << t[0][0] << " " << t[0][1] << "\t"
@@ -167,7 +307,7 @@ void VoronoiPlannerNode::save_log()
   auto tris = gen_vor.get_triangles();
   outputFile << "Triangles:" << std::endl;
   outputFile << tris.size() << std::endl;
-  for (auto & t : tris)
+  for (auto& t : tris)
   {
     auto points = t.get_points();
     outputFile << points[0][0] << " " << points[0][1] << "\t"
@@ -180,7 +320,7 @@ void VoronoiPlannerNode::save_log()
   auto bnds = gen_vor.get_boundaries();
   outputFile << "Boundaries:" << std::endl;
   outputFile << bnds.size() << std::endl;
-  for (auto & b : bnds)
+  for (auto& b : bnds)
   {
     auto points = b.get_points();
     outputFile << points[0][0] << " " << points[0][1] << "\t"
@@ -192,7 +332,7 @@ void VoronoiPlannerNode::save_log()
   auto tri_pts = gen_vor.get_triangle_points();
   outputFile << "Triangle points" << std::endl;
   outputFile << tri_pts.size() << std::endl;
-  for (auto & p : tri_pts)
+  for (auto& p : tri_pts)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }
@@ -202,7 +342,7 @@ void VoronoiPlannerNode::save_log()
   auto bnd_pts = gen_vor.get_boundary_points();
   outputFile << "Boundary points" << std::endl;
   outputFile << bnd_pts.size() << std::endl;
-  for (auto & p : bnd_pts)
+  for (auto& p : bnd_pts)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }
@@ -212,7 +352,7 @@ void VoronoiPlannerNode::save_log()
   auto line_pts = gen_vor.get_line_points();
   outputFile << "Line points" << std::endl;
   outputFile << line_pts.size() << std::endl;
-  for (auto & p : line_pts)
+  for (auto& p : line_pts)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }
@@ -222,7 +362,7 @@ void VoronoiPlannerNode::save_log()
   auto tri_line_pts = gen_vor.get_triangle_lined_points();
   outputFile << "Triangle lined points" << std::endl;
   outputFile << tri_line_pts.size() << std::endl;
-  for (auto & p : tri_line_pts)
+  for (auto& p : tri_line_pts)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }
@@ -232,7 +372,7 @@ void VoronoiPlannerNode::save_log()
   auto bnd_line_pts = gen_vor.get_boundary_lined_points();
   outputFile << "Boundary lined points" << std::endl;
   outputFile << bnd_line_pts.size() << std::endl;
-  for (auto & p : bnd_line_pts)
+  for (auto& p : bnd_line_pts)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }
@@ -242,7 +382,7 @@ void VoronoiPlannerNode::save_log()
   auto line_line_pts = gen_vor.get_line_lined_points();
   outputFile << "Line lined points" << std::endl;
   outputFile << line_line_pts.size() << std::endl;
-  for (auto & p : line_line_pts)
+  for (auto& p : line_line_pts)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }
@@ -252,9 +392,9 @@ void VoronoiPlannerNode::save_log()
   auto chains = gen_vor.get_chains();
   outputFile << "Chains" << std::endl;
   outputFile << chains.size() << std::endl;
-  for (auto & c : chains)
+  for (auto& c : chains)
   {
-    for (auto & p : c)
+    for (auto& p : c)
     {
       outputFile << p << ", ";
     }
@@ -268,7 +408,7 @@ void VoronoiPlannerNode::save_log()
   // get vor.vertices
   outputFile << "Vor.vertices" << std::endl;
   outputFile << vor.vertices.size() << std::endl;
-  for (auto & p : vor.vertices)
+  for (auto& p : vor.vertices)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }
@@ -277,7 +417,7 @@ void VoronoiPlannerNode::save_log()
   // get vor.ridge_points
   outputFile << "Vor.ridge_points" << std::endl;
   outputFile << vor.ridge_points.size() << std::endl;
-  for (auto & p : vor.ridge_points)
+  for (auto& p : vor.ridge_points)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }
@@ -286,7 +426,7 @@ void VoronoiPlannerNode::save_log()
   // get vor.ridge_vertices
   outputFile << "Vor.ridge_vertices" << std::endl;
   outputFile << vor.ridge_vertices.size() << std::endl;
-  for (auto & p : vor.ridge_vertices)
+  for (auto& p : vor.ridge_vertices)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }
@@ -295,9 +435,9 @@ void VoronoiPlannerNode::save_log()
   // get vor.regions
   outputFile << "Vor.regions" << std::endl;
   outputFile << vor.regions.size() << std::endl;
-  for (Chain p : vor.regions)
+  for (Chain& p : vor.regions)
   {
-    for (int q : p)
+    for (int& q : p)
     {
       outputFile << q << " ";
     }
@@ -308,7 +448,7 @@ void VoronoiPlannerNode::save_log()
   // get vor.point_region
   outputFile << "Vor.point_region" << std::endl;
   outputFile << vor.point_region.size() << std::endl;
-  for (auto & p : vor.point_region)
+  for (auto& p : vor.point_region)
   {
     outputFile << p << std::endl;
   }
@@ -317,7 +457,7 @@ void VoronoiPlannerNode::save_log()
   // get vor.points
   outputFile << "Vor.points" << std::endl;
   outputFile << vor.points.size() << std::endl;
-  for (auto & p : vor.points)
+  for (auto& p : vor.points)
   {
     outputFile << p[0] << " " << p[1] << std::endl;
   }

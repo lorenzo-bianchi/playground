@@ -205,8 +205,6 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
     grid.block(x, y, 2, 2).setConstant(true);
   }
 
-  std::cout << grid << std::endl;
-
   Polygons polys;
 
   Line b1 = Line({{           0.0,            0.0}, {field_size_[0],            0.0}});
@@ -278,7 +276,7 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
 
   // Run topp-ra
   toppra::Vectors positions;
-  for (auto vi : path3d)
+  for (auto& vi : path3d)
   {
     toppra::Vector vi_eigen(vi.size());
     for (long int i = 0; i < vi.size(); i++) vi_eigen(i) = vi[i];
@@ -300,38 +298,25 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   for (int i = 0; i < sample_points_; i++)
     times[i] = i / double(sample_points_-1);
 
-  // Compute useful quantities
+  // Sample spline
   pv = spline.eval(times, 0);
   dpv = spline.eval(times, 1);
   ddpv = spline.eval(times, 2);
 
-  // Spline length
-  length = 0.0;
-  for (int i = 0; i < sample_points_-1; ++i)
-  {
-    Eigen::Vector3d p1 = pv[i];
-    Eigen::Vector3d p2 = pv[i+1];
+  // Compute spline length
+  length = spline_length(pv, sample_points_);
 
-    length += (p2 - p1).norm();
-  }
+  // Compute spline curvature
+  std::vector<double> curvature;
+  spline_curvature(dpv, ddpv, sample_points_, curvature);
 
-  // Spline curvature
-  curvature.resize(sample_points_);
-  double num, den;
-  for (int i = 0; i < sample_points_; ++i)
-  {
-    Eigen::Vector3d dp = dpv[i];
-    Eigen::Vector3d ddp = ddpv[i];
+  // Find Voronoi regions
+  simple_cycles(vor_result);
 
-    num = dp.cross(ddp).norm();
-    den = std::pow(dp.norm(), 3);
-    if (den < 1e-6) den = 1e-6;
-    curvature[i] = num / den;
-  }
+  auto end_time = std::chrono::high_resolution_clock::now();
 
   /////////////////////////////////////////
 
-  auto end_time = std::chrono::high_resolution_clock::now();
   auto duration_contours = std::chrono::duration_cast<std::chrono::milliseconds>(contours_end_time - start_time).count();
   auto duration_voronoi = std::chrono::duration_cast<std::chrono::milliseconds>(voronoi_end_time - contours_end_time).count();
   auto duration_astar = std::chrono::duration_cast<std::chrono::milliseconds>(astar_end_time - voronoi_end_time).count();

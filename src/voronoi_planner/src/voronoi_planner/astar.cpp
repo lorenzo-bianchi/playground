@@ -67,7 +67,7 @@ Astar::Node* Astar::astar()
     {
       closed.push_back(current->get_idx());
       std::vector<int> neighbors = this->dict.find(current->get_idx());
-      for (int neighbor : neighbors)
+      for (int& neighbor : neighbors)
       {
         if (std::find(closed.begin(), closed.end(), neighbor) != closed.end()) continue;
         open.push(this->generate_node(neighbor, current));
@@ -140,7 +140,7 @@ int Astar::add_ridge(Point point)
   int ver_idx = this->vor.vertices.size() - 1;
 
   // append ridges
-  for (int neighbor : neighbors)
+  for (int& neighbor : neighbors)
   {
     RidgeVertex ridge = {neighbor, ver_idx};
     this->vor.ridge_vertices.push_back(ridge);
@@ -161,7 +161,7 @@ std::vector<int> Astar::find_adjacent(Point point)
   for (int i = 0; i < (int) vertices.size(); i++)
   {
     bool intersecting = false;
-    for (RidgeVertex ridge_vertex : this->vor.ridge_vertices)
+    for (RidgeVertex& ridge_vertex : this->vor.ridge_vertices)
     {
       if (i == ridge_vertex[0] || i == ridge_vertex[1]) continue;
 
@@ -173,7 +173,7 @@ std::vector<int> Astar::find_adjacent(Point point)
         break;
       }
     }
-    for (Triangle tri : this->vor.triangles)
+    for (Triangle& tri : this->vor.triangles)
     {
       auto points = tri.get_points();
 

@@ -69,7 +69,7 @@ namespace VoronoiPlanner
 
   bool contains_no_points(Point& p1, Point& p2, Point& p3, Polygon& polygon)
   {
-    for (Point pn : polygon)
+    for (Point& pn : polygon)
     {
       if (pn == p1 || pn == p2 || pn == p3)
       {
@@ -168,7 +168,7 @@ namespace VoronoiPlanner
   double calculate_total_area(std::vector<Triangle>& triangles)
   {
     double result = 0.0;
-    for (auto & triangle : triangles)
+    for (auto& triangle : triangles)
     {
       double sides[3];
       for (int i = 0; i < 3; i++)

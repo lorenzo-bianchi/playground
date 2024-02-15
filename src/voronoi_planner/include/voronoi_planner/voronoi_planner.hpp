@@ -413,6 +413,12 @@ private:
   void plot_voronoi();
   void save_log();
   void polys_from_grid(OccupancyGrid grid, Polygons &polygons);
+  double spline_length(toppra::Vectors s, int64_t sample_points);
+  void spline_curvature(toppra::Vectors ds,
+                        toppra::Vectors dds,
+                        int64_t sample_points,
+                        std::vector<double> &curvature);
+  void simple_cycles(Result vor_result);
 
   /* Node parameters */
   double distance_tresh_;

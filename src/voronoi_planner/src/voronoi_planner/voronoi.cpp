@@ -141,7 +141,7 @@ Chain GeneralizedVoronoi::vertices_in_polygon()
 
   for (size_t i = 0; i < this->vor.vertices.size(); i++)
   {
-    for (auto tri : this->triangles)
+    for (auto& tri : this->triangles)
     {
       if (tri.is_in_polygon(this->vor.vertices[i]))
       {
@@ -264,7 +264,7 @@ Chain GeneralizedVoronoi::ridges_to_delete(Chain& vertex_vec)
 
     // if ridge contains deleted vertex, delete ridge
     bool deleted = false;
-    for (auto ver : vertex_vec)
+    for (auto& ver : vertex_vec)
     {
       if (ver == rv[0] || ver == rv[1])
       {
@@ -276,7 +276,7 @@ Chain GeneralizedVoronoi::ridges_to_delete(Chain& vertex_vec)
     if (deleted) continue;
 
     // if ridge intersects with line, delete ridge
-    for (auto line : this->lines)
+    for (auto& line : this->lines)
     {
       Line l2 = Line({vertices[rv[0]], vertices[rv[1]]});
       if (line.is_intersecting_class(l2))
@@ -294,7 +294,7 @@ Chain GeneralizedVoronoi::ridges_to_delete(Chain& vertex_vec)
 void GeneralizedVoronoi::delete_vertex(Chain to_delete)
 {
   std::sort(to_delete.rbegin(), to_delete.rend());
-  for (int idx : to_delete)
+  for (int& idx : to_delete)
   {
     this->vor.vertices.erase(this->vor.vertices.begin() + idx);
   }
@@ -304,7 +304,7 @@ void GeneralizedVoronoi::delete_vertex(Chain to_delete)
 void GeneralizedVoronoi::delete_ridge(Chain to_delete)
 {
   std::sort(to_delete.rbegin(), to_delete.rend());
-  for (int idx : to_delete)
+  for (int& idx : to_delete)
   {
     this->vor.ridge_vertices.erase(this->vor.ridge_vertices.begin() + idx);
   }
@@ -501,7 +501,7 @@ Chains GeneralizedVoronoi::generate_chains()
 
   // ignition value must be dead end point (which has only 1 neighbor)
   int ignition_idx = -1;
-  for (std::pair<int, Chain> entry : dict.items())
+  for (std::pair<int, Chain>& entry : dict.items())
   {
     int key = entry.first;
     Chain value = entry.second;
@@ -551,7 +551,7 @@ Chain GeneralizedVoronoi::generate_chain(IndexDict& dict, ChainStart& start, Cha
   feature.push_back(chain.back());
 
   // add new starting points to queue
-  for (auto ele : new_start)
+  for (auto& ele : new_start)
   {
     start.push_back(ele);
   }

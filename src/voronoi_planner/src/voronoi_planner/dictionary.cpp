@@ -34,14 +34,14 @@ IndexDict::IndexDict(RidgeVertices& vec)
   Dict dict = this->generate(vec, false);
   Dict rdict = this->generate(vec, true);
 
-  for (auto entry : rdict)
+  for (auto& entry : rdict)
   {
     int key = entry.first;
     Chain value = entry.second;
 
     if (contains(dict, key))
     {
-      for (int ele : value)
+      for (int& ele : value)
       {
         if (std::find(dict[key].begin(), dict[key].end(), ele) == dict[key].end())
         {
@@ -65,7 +65,7 @@ void IndexDict::insert(int key, Chain& value)
 
   this->dict[key] = value;
 
-  for (int ele : value)
+  for (int& ele : value)
   {
     if (contains(this->dict, ele))
     {
@@ -96,7 +96,7 @@ Dict IndexDict::generate(RidgeVertices& vec, bool reverse)
 
   int current = sorted[0][idx];
 
-  for (auto ele : sorted)
+  for (auto& ele : sorted)
   {
     if (ele[idx] != current)
     {
@@ -143,7 +143,7 @@ Chain IndexDict::find(int key)
 std::vector<std::pair<int, Chain>> IndexDict::items()
 {
   std::vector<std::pair<int, Chain>> result;
-  for (auto entry : this->dict)
+  for (auto& entry : this->dict)
   {
     result.push_back(entry);
   }
