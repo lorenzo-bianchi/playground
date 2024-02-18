@@ -65,10 +65,10 @@ void VoronoiPlannerNode::spline_curvature(toppra::Vectors ds,
 /*  */
 void VoronoiPlannerNode::simple_cycles(Result vor_result)
 {
-  size_t n_nodes = 21;
-  vor_result.ridge_vertices = {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {8, 9}, {9, 10}, {10, 11}, {11, 12}, {16, 17}, {17, 18}, {18, 19}, {19, 20}, {0, 5}, {5, 8}, {8, 13}, {13, 16}, {2, 6}, {6, 10}, {10, 14}, {14, 18}, {4, 7}, {7, 12}, {12, 15}, {15, 20}};
+  // size_t n_nodes = 21;
+  // vor_result.ridge_vertices = {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {8, 9}, {9, 10}, {10, 11}, {11, 12}, {16, 17}, {17, 18}, {18, 19}, {19, 20}, {0, 5}, {5, 8}, {8, 13}, {13, 16}, {2, 6}, {6, 10}, {10, 14}, {14, 18}, {4, 7}, {7, 12}, {12, 15}, {15, 20}};
 
-  // size_t n_nodes = vor_result.ridge_vertices.size();
+  size_t n_nodes = vor_result.vertices.size();
 
   std::vector<std::vector<int>> adj(n_nodes);
   for (const Eigen::Vector2i& edge : vor_result.ridge_vertices)

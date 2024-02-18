@@ -250,13 +250,10 @@ namespace VoronoiPlanner
     Point& test_point,
     double distance_tresh)
   {
-    for (size_t i = 0; i < 3; i++)
+    for (auto& point : points)
     {
-      double dist = (test_point - points[i]).norm();
-      if (dist < distance_tresh)
-      {
-        return true;
-      }
+      double dist = (test_point - point).norm();
+      if (dist < distance_tresh) return true;
     }
     return false;
   }
@@ -269,10 +266,7 @@ namespace VoronoiPlanner
       int ccw1 = counter_clockwise(points[i], points[(i + 1) % 3], test_point);
       int ccw2 = counter_clockwise(points[i], test_point, points[(i + 2) % 3]);
 
-      if (ccw1 * ccw2 <= 0.0)
-      {
-        return false;
-      }
+      if (ccw1 * ccw2 <= 0.0) return false;
     }
     return true;
   }

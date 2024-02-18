@@ -313,14 +313,13 @@ void GeneralizedVoronoi::delete_ridge(Chain to_delete)
 /*  */
 void GeneralizedVoronoi::reorganize_ridge(Chain& deleted_vertices)
 {
-  for (size_t i = 0; i < this->vor.ridge_vertices.size(); i++)
+  for (RidgeVertex& rv : this->vor.ridge_vertices)
   {
-    RidgeVertex rv = this->vor.ridge_vertices[i];
     int rv0 = rv[0];
     int rv1 = rv[1];
     int rv0i = find_closest(deleted_vertices, rv0);
     int rv1i = find_closest(deleted_vertices, rv1);
-    this->vor.ridge_vertices[i] = RidgeVertex({rv0 - rv0i, rv1 - rv1i});
+    rv = RidgeVertex({rv0 - rv0i, rv1 - rv1i});
   }
 }
 

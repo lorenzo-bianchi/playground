@@ -47,6 +47,28 @@ params:
     read_only: false
     var_name: line_increase_
 
+  max_acc:
+    type: double
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 100.0
+    step: 0.0
+    description: "Maximum acceleration module."
+    constraints: "In meters/second^2. Cannot be changed."
+    read_only: true
+    var_name: max_acc_
+
+  max_vel:
+    type: double
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 10.0
+    step: 0.0
+    description: "Maximum velocity module."
+    constraints: "In meters/second. Cannot be changed."
+    read_only: true
+    var_name: max_vel_
+
   move_coefficient:
     type: double
     default_value: 0.0

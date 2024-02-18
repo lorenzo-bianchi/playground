@@ -50,6 +50,9 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   // Initialize topic publishers
   init_publishers();
 
+  // Initialize TOPP-RA variables
+  init_toppra();
+
   // Initialize static variables
   Line::point_distance = point_distance_;
   Triangle::distance_tresh = distance_tresh_;
@@ -134,22 +137,22 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //                    { 0.0, -0.5}},
   //                  };
 
-  // Polygons polys = {
-  //                   {{12.5, 0.0}, {15.0, 0.0}, {15.0, 1.5}, {12.5, 1.5}},
-  //                   {{19.0, 1.0}, {17.0, 1.0}, {17.0, 3.0}, {19.0, 3.0}},
-  //                   {{14.5, 8.0}, {19.0, 8.0}, {19.0, 9.0}, {14.5, 9.0}},
-  //                   {{12.0, 3.0}, {12.0, 4.5}, {13.0, 4.5}, {13.0, 4.0}, {14.0, 4.0}, {14.0, 4.5}, {15.0, 4.5}, {15.0, 3.0}},
-  //                   {{12.0, 5.5}, {13.0, 5.5}, {13.0, 6.0}, {14.0, 6.0}, {14.0, 5.5}, {15.0, 5.5}, {15.0, 6.5}, {12.0, 6.5}},
-  //                   {{3.0, 3.0}, {4.0, 3.0}, {4.0, 4.0}, {3.0, 4.0}},
-  //                   {{3.0, 5.0}, {4.0, 5.0}, {4.0, 6.0}, {3.0, 6.0}},
-  //                   {{3.0, 7.0}, {4.0, 7.0}, {4.0, 8.0}, {3.0, 8.0}},
-  //                   {{5.0, 3.0}, {6.0, 3.0}, {6.0, 4.0}, {5.0, 4.0}},
-  //                   {{5.0, 5.0}, {6.0, 5.0}, {6.0, 6.0}, {5.0, 6.0}},
-  //                   {{5.0, 7.0}, {6.0, 7.0}, {6.0, 8.0}, {5.0, 8.0}},
-  //                   {{7.0, 3.0}, {8.0, 3.0}, {8.0, 4.0}, {7.0, 4.0}},
-  //                   {{7.0, 6.0}, {8.0, 5.0}, {8.0, 6.0}, {7.0, 6.0}},
-  //                   {{7.0, 7.0}, {8.0, 7.0}, {8.0, 8.0}, {7.0, 8.0}},
-  //                  };
+  Polygons polys = {
+                    {{12.5, 0.0}, {15.0, 0.0}, {15.0, 1.5}, {12.5, 1.5}},
+                    {{19.0, 1.0}, {17.0, 1.0}, {17.0, 3.0}, {19.0, 3.0}},
+                    {{14.5, 8.0}, {19.0, 8.0}, {19.0, 9.0}, {14.5, 9.0}},
+                    {{12.0, 3.0}, {12.0, 4.5}, {13.0, 4.5}, {13.0, 4.0}, {14.0, 4.0}, {14.0, 4.5}, {15.0, 4.5}, {15.0, 3.0}},
+                    {{12.0, 5.5}, {13.0, 5.5}, {13.0, 6.0}, {14.0, 6.0}, {14.0, 5.5}, {15.0, 5.5}, {15.0, 6.5}, {12.0, 6.5}},
+                    {{3.0, 3.0}, {4.0, 3.0}, {4.0, 4.0}, {3.0, 4.0}},
+                    {{3.0, 5.0}, {4.0, 5.0}, {4.0, 6.0}, {3.0, 6.0}},
+                    {{3.0, 7.0}, {4.0, 7.0}, {4.0, 8.0}, {3.0, 8.0}},
+                    {{5.0, 3.0}, {6.0, 3.0}, {6.0, 4.0}, {5.0, 4.0}},
+                    {{5.0, 5.0}, {6.0, 5.0}, {6.0, 6.0}, {5.0, 6.0}},
+                    {{5.0, 7.0}, {6.0, 7.0}, {6.0, 8.0}, {5.0, 8.0}},
+                    {{7.0, 3.0}, {8.0, 3.0}, {8.0, 4.0}, {7.0, 4.0}},
+                    {{7.0, 5.0}, {8.0, 5.0}, {8.0, 6.0}, {7.0, 6.0}},
+                    {{7.0, 7.0}, {8.0, 7.0}, {8.0, 8.0}, {7.0, 8.0}},
+                   };
 
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -205,8 +208,6 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
     grid.block(x, y, 2, 2).setConstant(true);
   }
 
-  Polygons polys;
-
   Line b1 = Line({{           0.0,            0.0}, {field_size_[0],            0.0}});
   Line b2 = Line({{field_size_[0],            0.0}, {field_size_[0], field_size_[1]}});
   Line b3 = Line({{field_size_[0], field_size_[1]}, {           0.0, field_size_[1]}});
@@ -217,7 +218,8 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   auto start_time = std::chrono::high_resolution_clock::now();
 
   // Code to be timed
-  polys_from_grid(grid, polys);
+  // Polygons polys;
+  // polys_from_grid(grid, polys);
 
   auto contours_end_time = std::chrono::high_resolution_clock::now();
 
@@ -293,10 +295,61 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   toppra::BoundaryCondFull bc_type{bc_start, bc_end};
 
   toppra::PiecewisePolyPath spline = toppra::PiecewisePolyPath::CubicSpline(positions, times, bc_type);
+  std::shared_ptr<toppra::PiecewisePolyPath> spline_ptr = std::make_shared<toppra::PiecewisePolyPath>(spline);
 
   times.resize(sample_points_);
   for (int i = 0; i < sample_points_; i++)
     times[i] = i / double(sample_points_-1);
+
+  // Compute velocity profile
+  toppra::algorithm::TOPPRA problem{constrains, spline_ptr};
+  problem.computePathParametrization(0, 0);
+
+  pd = problem.getParameterizationData();
+
+  spline_path = std::make_shared<toppra::parametrizer::ConstAccel>(spline_ptr, pd.gridpoints, pd.parametrization);
+  // spline_path = std::make_shared<toppra::parametrizer::Spline>(spline_ptr, pd.gridpoints, pd.parametrization);
+
+  const toppra::Bound optimized_time_interval = spline_path->pathInterval();
+  std::cout << "Optimized time: " << optimized_time_interval << "s" << std::endl;
+  time_breaks_optimized = toppra::Vector::LinSpaced(5 * sample_points_, optimized_time_interval(0), optimized_time_interval(1));
+
+  q_nominal_optimized = spline_path->eval(time_breaks_optimized, 0);
+  q_dot_nominal_optimized = spline_path->eval(time_breaks_optimized, 1);
+  q_ddot_nominal_optimized = spline_path->eval(time_breaks_optimized, 2);
+
+  std::vector<Eigen::VectorXd> q_nominal_optimized_mat;
+  std::vector<Eigen::VectorXd> q_dot_nominal_optimized_mat;
+  std::vector<double> time_breaks_optimized_vec;
+  for (size_t i = 0; i < (size_t) 5 * sample_points_; i++)
+  {
+    const double t = time_breaks_optimized[i];
+    const toppra::Vector& q_t = q_nominal_optimized[i];
+    const toppra::Vector& q_dot_t = q_dot_nominal_optimized[i];
+    q_nominal_optimized_mat.push_back(q_t);
+    q_dot_nominal_optimized_mat.push_back(q_dot_t);
+    time_breaks_optimized_vec.push_back(t);
+  }
+
+  // Check if computed velocity is correct
+  Point pos = start;
+  for (size_t i = 1; i < q_dot_nominal_optimized_mat.size(); i++)
+  {
+    pos += q_dot_nominal_optimized_mat[i] * (time_breaks_optimized[i] - time_breaks_optimized[i-1]);
+  }
+  std::cout << "Final position: " << pos.transpose() << std::endl;
+  std::cout << "Error: " << goal.transpose() - pos.transpose() << std::endl;
+
+  // // print q_nominal_optimized_mat
+  // for (size_t i = 0; i < q_dot_nominal_optimized_mat.size(); i++)
+  // {
+  //   std::cout << "q_dot_nominal_optimized_mat[" << i << "] = " << q_dot_nominal_optimized_mat[i].transpose() << std::endl;
+  // }
+
+
+
+
+
 
   // Sample spline
   pv = spline.eval(times, 0);
@@ -311,7 +364,7 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   spline_curvature(dpv, ddpv, sample_points_, curvature);
 
   // Find Voronoi regions
-  simple_cycles(vor_result);
+  // simple_cycles(vor_result);
 
   auto end_time = std::chrono::high_resolution_clock::now();
 
@@ -330,7 +383,7 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
 
   // Plot
   if (plot_voronoi_) plot_voronoi();
-
+LINE
   throw std::invalid_argument("Error in generate_plot()");
 
   // Save data on file
@@ -364,6 +417,24 @@ void VoronoiPlannerNode::init_publishers()
   //   joy_topic_name,
   //   rclcpp::QoS(1));
 }
+
+/**
+ * @brief Routine to initialize topic publishers.
+ */
+void VoronoiPlannerNode::init_toppra()
+{
+  velLimitLower = -max_vel_ * toppra::Vector::Ones(3);
+  velLimitUpper =  max_vel_ * toppra::Vector::Ones(3);
+  accLimitLower = -max_acc_ * toppra::Vector::Ones(3);
+  accLimitUpper =  max_acc_ * toppra::Vector::Ones(3);
+
+  toppra::LinearConstraintPtr ljv, lja;
+  ljv = std::make_shared<toppra::constraint::LinearJointVelocity>(velLimitLower, velLimitUpper);
+  lja = std::make_shared<toppra::constraint::LinearJointAcceleration>(accLimitLower, accLimitUpper);
+
+  constrains = toppra::LinearConstraintPtrs{ljv, lja};
+}
+
 } // namespace VoronoiPlanner
 
 #include <rclcpp_components/register_node_macro.hpp>

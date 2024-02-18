@@ -69,6 +69,7 @@
 #include <toppra/geometric_path.hpp>
 #include <toppra/geometric_path/piecewise_poly_path.hpp>
 #include <toppra/parametrizer/const_accel.hpp>
+#include <toppra/parametrizer/spline.hpp>
 #include <toppra/solver/seidel.hpp>
 #include <toppra/toppra.hpp>
 #include <toppra/geometric_path/piecewise_poly_path.hpp>
@@ -425,6 +426,8 @@ private:
   std::vector<double> field_size_;
   double grid_resolution_;
   double line_increase_;
+  double max_acc_;
+  double max_vel_;
   double move_coefficient_;
   std::vector<int64_t> plot_size_;
   bool plot_voronoi_;
@@ -445,6 +448,7 @@ private:
   void init_atomics();
   void init_parameters();
   void init_publishers();
+  void init_toppra();
 
   /* Internal state variables */
   std::vector<std::vector<std::vector<double>>> polygons;
@@ -462,6 +466,18 @@ private:
   Point start;
   Point goal;
   Astar astar;
+
+  toppra::Vector velLimitLower;
+  toppra::Vector velLimitUpper;
+  toppra::Vector accLimitLower;
+  toppra::Vector accLimitUpper;
+  toppra::LinearConstraintPtrs constrains;
+  toppra::ParametrizationData pd;
+  std::shared_ptr<toppra::parametrizer::ConstAccel> spline_path;
+  toppra::Vector time_breaks_optimized;
+  toppra::Vectors q_nominal_optimized;
+  toppra::Vectors q_dot_nominal_optimized;
+  toppra::Vectors q_ddot_nominal_optimized;
 };
 
 } // namespace VoronoiPlanner
