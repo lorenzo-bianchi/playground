@@ -100,6 +100,7 @@ typedef std::vector<int> Chain;
 typedef std::vector<Chain> Chains;
 typedef Eigen::Vector2i ChainIdx;
 typedef std::deque<ChainIdx> ChainStart;
+typedef Eigen::Vector3d Point3D;
 typedef Eigen::Vector2d Point;
 typedef std::vector<Point> Polygon;
 typedef std::vector<Polygon> Polygons;
@@ -108,7 +109,8 @@ typedef std::vector<RidgeVertex> RidgeVertices;
 typedef std::vector<Point> VertexChain;
 typedef std::vector<VertexChain> VertexChains;
 typedef std::map<int, Chain> Dict;
-typedef Eigen::Matrix<bool, -1, -1> OccupancyGrid;
+typedef Eigen::Matrix<bool, -1, -1> OccupancyGrid2D;
+typedef std::vector<OccupancyGrid2D> OccupancyGrid3D;
 
 namespace VoronoiPlanner
 {
@@ -156,12 +158,15 @@ private:
 
 struct Result
 {
-  std::vector<Triangle> triangles;
-  std::vector<Line> boundaries;
-  std::vector<Point> points;
+  std::vector<std::vector<Triangle>> triangles;
+  std::vector<std::vector<Point>> points;
+  // std::vector<Line> boundaries;
   // std::vector<Point> points_polygon;
-  VertexChain vertices;
-  RidgeVertices ridge_vertices;
+  std::vector<double> altitudes;
+  std::vector<Point3D> vertices = {};
+  std::vector<Eigen::Vector2i> ridges = {};
+  std::vector<size_t> r_lengths;
+  std::vector<size_t> v_lengths;
   // Chains chains;
 };
 
@@ -252,10 +257,10 @@ public:
   void add_polygon(Polygon& polygon);
   void add_polygons(Polygons& polygons);
   bool optimize_line();
-  void run(run_type type, bool plot, Result& result);
-  void run_non_optimized(bool generate_result, Result& result);
-  void run_optimized(Result& result);
-    void generate_plot();
+  void run(run_type type, bool plot, double altitude, Result& result);
+  void run_non_optimized();
+  void run_optimized();
+  void generate_plot();
   // get functions
   std::vector<Point> get_points() { return points; }
   std::vector<Line> get_lines() { return lines; }
@@ -293,7 +298,7 @@ private:
   Voronoi vor;
 
   void run_voronoi(std::vector<Point>& points);
-  void generate_result(Result& result);
+  void generate_result(double altitude, Result& result);
   Chains generate_chains();
   Chain generate_chain(IndexDict& dict, ChainStart& start, Chain& feature);
   ChainStart chain(IndexDict& dict, ChainIdx& idx, Chain& chain, Chain& feature);
@@ -314,9 +319,9 @@ class Astar
 {
 public:
   Astar() {}
-  Astar(Result vor, Point start, Point end);
-  void set_result(std::vector<Point> result) { this->result = result; }
-  std::vector<Point> get_result() { return result; }
+  Astar(Result vor, Point3D start, Point3D end);
+  void set_result(std::vector<Point3D> result) { this->result = result; }
+  std::vector<Point3D> get_result() { return result; }
 
   class Node
   {
@@ -347,11 +352,11 @@ public:
     double f;
   };
 
-  std::vector<Point> run();
+  std::vector<Point3D> run();
   void generate_plot();
 
 private:
-  std::vector<Point> result;
+  std::vector<Point3D> result;
   Result vor;
   IndexDict dict;
   int start;
@@ -361,8 +366,8 @@ private:
   double heuristic(int idx);
   Node* generate_node(int idx, Node* current);
   bool is_goal(int idx);
-  int add_ridge(Point point);
-  std::vector<int> find_adjacent(Point point);
+  int add_ridge(Point3D point);
+  std::vector<int> find_adjacent(Point3D point);
 };
 
 ///////////////////////////////////
@@ -411,9 +416,10 @@ private:
   // rclcpp::Publisher<voronoi_planner_msgs::msg::VoronoiPlanner>::SharedPtr joy_pub_;
 
   /* Utility routines */
-  void plot_voronoi();
+  void plot_voronoi_2d(int layer);
+  void plot_voronoi_3d();
   void save_log();
-  void polys_from_grid(OccupancyGrid grid, Polygons &polygons);
+  void polys_from_grid(OccupancyGrid2D grid, Polygons &polygons);
   double spline_length(toppra::Vectors s, int64_t sample_points);
   void spline_curvature(toppra::Vectors ds,
                         toppra::Vectors dds,
@@ -453,18 +459,17 @@ private:
   /* Internal state variables */
   std::vector<std::vector<std::vector<double>>> polygons;
   GeneralizedVoronoi gen_vor;
-  Result vor_result;
-  std::vector<Point> path;
-  std::vector<Eigen::Vector3d> path3d;
-  std::vector<Eigen::Vector3d> path3d_orig;
+  Result results;
+  std::vector<Point3D> path;
+  std::vector<Point3D> path_orig;
   toppra::Vectors pv;
   toppra::Vectors dpv;
   toppra::Vectors ddpv;
   toppra::Vector times;
   std::vector<double> curvature;
   double length;
-  Point start;
-  Point goal;
+  Point3D start;
+  Point3D goal;
   Astar astar;
 
   toppra::Vector velLimitLower;

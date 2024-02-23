@@ -71,7 +71,7 @@ void VoronoiPlannerNode::simple_cycles(Result vor_result)
   size_t n_nodes = vor_result.vertices.size();
 
   std::vector<std::vector<int>> adj(n_nodes);
-  for (const Eigen::Vector2i& edge : vor_result.ridge_vertices)
+  for (const Eigen::Vector2i& edge : vor_result.ridges)
   {
     adj[edge[0]].push_back(edge[1]);
     adj[edge[1]].push_back(edge[0]);
@@ -169,7 +169,7 @@ void VoronoiPlannerNode::simple_cycles(Result vor_result)
 }
 
 /*  */
-void VoronoiPlannerNode::polys_from_grid(OccupancyGrid grid, Polygons &polygons)
+void VoronoiPlannerNode::polys_from_grid(OccupancyGrid2D grid, Polygons &polygons)
 {
   // convert grid to cv::Mat
   cv::Mat grid_cv(grid.rows(), grid.cols(), CV_8UC1);
@@ -208,12 +208,12 @@ void VoronoiPlannerNode::polys_from_grid(OccupancyGrid grid, Polygons &polygons)
 }
 
 /*  */
-void VoronoiPlannerNode::plot_voronoi()
+void VoronoiPlannerNode::plot_voronoi_2d(int layer)
 {
   plt::figure_size(plot_size_[0], plot_size_[1]);
 
   std::vector<double> X, Y;
-  for (auto& vector : vor_result.points)
+  for (auto& vector : results.points[layer])
   {
     X.push_back(vector[0]);
     Y.push_back(vector[1]);
@@ -221,7 +221,7 @@ void VoronoiPlannerNode::plot_voronoi()
   plt::plot(X, Y, "b.");
 
   // X.clear(); Y.clear();
-  // for (auto& vector : vor_result.vertices)
+  // for (auto& vector : results.vertices)
   // {
   //   X.push_back(vector[0]);
   //   Y.push_back(vector[1]);
@@ -229,12 +229,12 @@ void VoronoiPlannerNode::plot_voronoi()
   // plt::plot(X, Y, "yo");
 
   X.clear(); Y.clear();
-  for (size_t i = 0; i <  vor_result.ridge_vertices.size(); i++)
+  for (size_t i = 0; i <  results.ridges.size(); i++)
   {
-    RidgeVertex simplex = vor_result.ridge_vertices[i];
+    RidgeVertex simplex = results.ridges[i];
 
-    Point p1 = vor_result.vertices[simplex[0]];
-    Point p2 = vor_result.vertices[simplex[1]];
+    Point3D p1 = results.vertices[simplex[0]];
+    Point3D p2 = results.vertices[simplex[1]];
 
     X = {p1[0], p2[0]};
     Y = {p1[1], p2[1]};
@@ -242,10 +242,10 @@ void VoronoiPlannerNode::plot_voronoi()
   }
 
   X.clear(); Y.clear();
-  for (size_t i = 0; i < path3d_orig.size()-1; i++)
+  for (size_t i = 0; i < path_orig.size()-1; i++)
   {
-    X = {path3d_orig[i][0], path3d_orig[i+1][0]};
-    Y = {path3d_orig[i][1], path3d_orig[i+1][1]};
+    X = {path_orig[i][0], path_orig[i+1][0]};
+    Y = {path_orig[i][1], path_orig[i+1][1]};
     plt::plot(X, Y, "yo");
     plt::plot(X, Y, "r");
   }
@@ -255,8 +255,8 @@ void VoronoiPlannerNode::plot_voronoi()
   // plt::plot({goal[0]}, {goal[1]}, "k*");
   // for (size_t i = 0; i < path3d.size()-1; i++)
   // {
-  //   X = {path3d[i][0], path3d[i+1][0]};
-  //   Y = {path3d[i][1], path3d[i+1][1]};
+  //   X = {path[i][0], path[i+1][0]};
+  //   Y = {path[i][1], path[i+1][1]};
   //   plt::plot(X, Y, "r");
   // }
 
@@ -271,6 +271,80 @@ void VoronoiPlannerNode::plot_voronoi()
   plt::legend();
   plt::set_aspect_equal();
   plt::show();
+}
+
+/*  */
+void VoronoiPlannerNode::plot_voronoi_3d()
+{
+  // plt::figure_size(plot_size_[0], plot_size_[1]);
+
+  // for (size_t layer = 0; layer < results.altitudes.size(); layer++)
+  // {
+  //   std::vector<double> X, Y, Z;
+  //   for (auto& vector : results.points[layer])
+  //   {
+  //     X.push_back(vector[0]);
+  //     Y.push_back(vector[1]);
+  //     Z.push_back(vector[2]);
+  //   }
+  //   plt::plot(X, Y, Z, "b.");
+  // }
+
+  // // X.clear(); Y.clear();
+  // // for (auto& vector : results.vertices)
+  // // {
+  // //   X.push_back(vector[0]);
+  // //   Y.push_back(vector[1]);
+  // // }
+  // // plt::plot(X, Y, "yo");
+
+  // X.clear(); Y.clear(); Z.clear();
+  // for (size_t i = 0; i <  results.ridges.size(); i++)
+  // {
+  //   RidgeVertex simplex = results.ridges[i];
+
+  //   Point3D p1 = results.vertices[simplex[0]];
+  //   Point3D p2 = results.vertices[simplex[1]];
+
+  //   X = {p1[0], p2[0]};
+  //   Y = {p1[1], p2[1]};
+  //   Z = {p1[2], p2[2]};
+  //   plt::plot(X, Y, Z, "m--");
+  // }
+
+  // X.clear(); Y.clear(); Z.clear();
+  // for (size_t i = 0; i < path_orig.size()-1; i++)
+  // {
+  //   X = {path_orig[i][0], path_orig[i+1][0]};
+  //   Y = {path_orig[i][1], path_orig[i+1][1]};
+  //   Z = {path_orig[i][2], path_orig[i+1][2]};
+  //   plt::plot(X, Y, Z, "yo");
+  //   plt::plot(X, Y, Z, "r");
+  // }
+
+  // // X.clear(); Y.clear(); Z.clear();
+  // // plt::plot({start[0]}, {start[1]}, {start[2]}, "k*");
+  // // plt::plot({goal[0]}, {goal[1]}, {goal[2]}, "k*");
+  // // for (size_t i = 0; i < path.size()-1; i++)
+  // // {
+  // //   X = {path[i][0], path[i+1][0]};
+  // //   Y = {path[i][1], path[i+1][1]};
+  // //   Z = {path[i][2], path[i+1][2]};
+  // //   plt::plot(X, Y, Z, "r");
+  // // }
+
+  // X.clear(); Y.clear(); Y.clear();
+  // for (size_t i = 0; i < pv.size()-1; i++)
+  // {
+  //   X = {pv[i][0], pv[i+1][0]};
+  //   Y = {pv[i][1], pv[i+1][1]};
+  //   Z = {pv[i][2], pv[i+1][2]};
+  //   plt::plot(X, Y, Z, "g");
+  // }
+
+  // plt::legend();
+  // plt::set_aspect_equal();
+  // plt::show();
 }
 
 /*  */

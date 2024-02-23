@@ -155,7 +155,7 @@ Chain GeneralizedVoronoi::vertices_in_polygon()
 }
 
 /*  */
-void GeneralizedVoronoi::run_non_optimized(bool generate_result, Result& result)
+void GeneralizedVoronoi::run_non_optimized()
 {
   std::vector<Point> all_points = {};
   all_points.insert(all_points.end(), boundary_lined_points.begin(), boundary_lined_points.end());
@@ -175,22 +175,18 @@ void GeneralizedVoronoi::run_non_optimized(bool generate_result, Result& result)
 
   // reorganize ridge vertices
   this->reorganize_ridge(unreachable_vertices);
-
-  if (generate_result) this->generate_result(result);
 }
 
 /*  */
-void GeneralizedVoronoi::run_optimized(Result& result)
+void GeneralizedVoronoi::run_optimized()
 {
-  this->run_non_optimized(false, result);
+  this->run_non_optimized();
 
   while (true)
   {
     if (!this->optimize_line()) break;
     this->delete_unfinished();
   }
-
-  this->generate_result(result);
 }
 
 /*  */
@@ -324,17 +320,19 @@ void GeneralizedVoronoi::reorganize_ridge(Chain& deleted_vertices)
 }
 
 /*  */
-void GeneralizedVoronoi::run(run_type type, bool plot, Result& result)
+void GeneralizedVoronoi::run(run_type type, bool plot, double altitude, Result& results)
 {
   switch (type)
   {
     case run_type::non_optimized:
-      this->run_non_optimized(true, result);
+      this->run_non_optimized();
       break;
     case run_type::optimized:
-      this->run_optimized(result);
+      this->run_optimized();
       break;
   }
+
+  this->generate_result(altitude, results);
 
   if (plot) this->generate_plot();
 }
@@ -481,16 +479,25 @@ void GeneralizedVoronoi::run_voronoi(std::vector<Point>& points)
 }
 
 /*  */
-void GeneralizedVoronoi::generate_result(Result& result)
+void GeneralizedVoronoi::generate_result(double altitude, Result& results)
 {
-  result.triangles = this->triangles;
-  result.boundaries = this->boundaries;
-  result.points = this->vor.points;
-  //result.points_polygon = this->triangle_lined_points;
-  result.vertices = this->vor.vertices;
-  result.ridge_vertices = this->vor.ridge_vertices;
-  // if (!this->chains.empty())
-  //   result.chains = this->chains;
+  // transform vertices from 2d to 3d
+  std::vector<Point3D> vertices(this->vor.vertices.size());
+  for (size_t i = 0; i < this->vor.vertices.size(); i++)
+    vertices[i] = {this->vor.vertices[i][0], this->vor.vertices[i][1], altitude};
+  results.vertices.insert(results.vertices.end(), vertices.begin(), vertices.end());
+
+  for (size_t i = 0; i < this->vor.ridge_vertices.size(); i++)
+    this->vor.ridge_vertices[i] += Eigen::Vector2i(results.v_lengths.back(), results.v_lengths.back());
+  results.ridges.insert(results.ridges.end(), this->vor.ridge_vertices.begin(), this->vor.ridge_vertices.end());
+
+  results.r_lengths.push_back(results.r_lengths.back() + this->vor.ridge_vertices.size());
+  results.v_lengths.push_back(results.v_lengths.back() + this->vor.vertices.size());
+
+  results.points.push_back(this->vor.points);
+  results.triangles.push_back(this->triangles);
+
+  results.altitudes.push_back(altitude);
 }
 
 /*  */

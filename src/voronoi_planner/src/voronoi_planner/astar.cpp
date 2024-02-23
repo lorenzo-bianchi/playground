@@ -37,10 +37,10 @@ Astar::Node::Node(int idx, Node* parent, double g, double h)
   f(g + h) {}
 
 /*  */
-Astar::Astar(Result vor, Point start, Point end)
+Astar::Astar(Result vor, Point3D start, Point3D end)
 {
   this->vor = vor;
-  this->dict = IndexDict(this->vor.ridge_vertices);
+  this->dict = IndexDict(this->vor.ridges);
   this->start = this->add_ridge(start);
   this->end = this->add_ridge(end);
 }
@@ -80,12 +80,12 @@ Astar::Node* Astar::astar()
 
 
 /*  */
-std::vector<Point> Astar::run()
+std::vector<Point3D> Astar::run()
 {
   Node* node = this->astar();
-  VertexChain vertices = this->vor.vertices;
+  std::vector<Point3D> vertices = this->vor.vertices;
 
-  std::vector<Point> result;
+  std::vector<Point3D> result;
   while (node != nullptr)
   {
     result.push_back(vertices[node->get_idx()]);
@@ -101,15 +101,15 @@ std::vector<Point> Astar::run()
 /*  */
 double Astar::heuristic(int idx)
 {
-  Point cur_ver = this->vor.vertices[idx];
-  Point goal_point = this->vor.vertices[this->end];
+  Point3D cur_ver = this->vor.vertices[idx];
+  Point3D goal_point = this->vor.vertices[this->end];
   return (cur_ver - goal_point).norm();
 }
 
 /*  */
 Astar::Node* Astar::generate_node(int idx, Node* current)
 {
-  VertexChain vertices = this->vor.vertices;
+  std::vector<Point3D> vertices = this->vor.vertices;
 
   double g;
   if (current == nullptr) g = 0;
@@ -130,7 +130,7 @@ bool Astar::is_goal(int idx)
 }
 
 /*  */
-int Astar::add_ridge(Point point)
+int Astar::add_ridge(Point3D point)
 {
   // find adjacent vertices
   std::vector<int> neighbors = this->find_adjacent(point);
@@ -139,11 +139,14 @@ int Astar::add_ridge(Point point)
   this->vor.vertices.push_back(point);
   int ver_idx = this->vor.vertices.size() - 1;
 
+  // print size of ridges
+  std::cout << "this->vor.ridges.size(): " << this->vor.ridges.size() << std::endl;
+
   // append ridges
   for (int& neighbor : neighbors)
   {
     RidgeVertex ridge = {neighbor, ver_idx};
-    this->vor.ridge_vertices.push_back(ridge);
+    this->vor.ridges.push_back(ridge);
   }
 
   // insert new ridges to dictionary
@@ -152,54 +155,62 @@ int Astar::add_ridge(Point point)
 }
 
 /*  */
-std::vector<int> Astar::find_adjacent(Point point)
+std::vector<int> Astar::find_adjacent(Point3D point)
 {
-  VertexChain vertices = this->vor.vertices;
+  std::vector<Point3D> vertices = this->vor.vertices;
   std::vector<int> adjacent;
 
   // find vertex that does not intersect with ridges
   for (int i = 0; i < (int) vertices.size(); i++)
   {
     bool intersecting = false;
-    for (RidgeVertex& ridge_vertex : this->vor.ridge_vertices)
+    for (RidgeVertex& ridge_vertex : this->vor.ridges)
     {
       if (i == ridge_vertex[0] || i == ridge_vertex[1]) continue;
 
-      std::vector<Point> l1 = {point, vertices[i]};
-      std::vector<Point> l2 = {vertices[ridge_vertex[0]], vertices[ridge_vertex[1]]};
+      Point point2d(point(0), point(1));
+      Point vertex2d(vertices[i](0), vertices[i](1));
+      std::vector<Point> l1 = {point2d, vertex2d};
+
+      Point vertex2dA(vertices[ridge_vertex[0]](0), vertices[ridge_vertex[0]](1));
+      Point vertex2dB(vertices[ridge_vertex[1]](0), vertices[ridge_vertex[1]](1));
+      std::vector<Point> l2 = {vertex2dA, vertex2dB};
       if (is_intersecting(l1, l2))
       {
         intersecting = true;
         break;
       }
     }
-    for (Triangle& tri : this->vor.triangles)
-    {
-      auto points = tri.get_points();
+    // TODO
+    // for (Triangle& tri : this->vor.triangles)
+    // {
+    //   auto points = tri.get_points();
 
-      Point point1 = points[0];
-      Point point2 = points[1];
-      Point point3 = points[2];
+    //   Point point1 = points[0];
+    //   Point point2 = points[1];
+    //   Point point3 = points[2];
 
-      std::vector<Point> l1 = {point, vertices[i]};
+    //   Point point2d(point(0), point(1));
+    //   Point vertex2d(vertices[i](0), vertices[i](1));
+    //   std::vector<Point> l1 = {point2d, vertex2d};
 
-      double k = 0.2; // TODO: line_increase_;
-      double norm21 = (point2 - point1).norm();
-      double norm32 = (point3 - point2).norm();
-      double norm13 = (point1 - point3).norm();
-      std::vector<Point> l2 = {point1 - k * (point2 - point1) / norm21,
-                               point2 + k * (point2 - point1) / norm21};
-      std::vector<Point> l3 = {point2 - k * (point3 - point2) / norm32,
-                               point3 + k * (point3 - point2) / norm32};
-      std::vector<Point> l4 = {point3 - k * (point1 - point3) / norm13,
-                               point1 + k * (point1 - point3) / norm13};
+    //   double k = 0.2; // TODO: line_increase_;
+    //   double norm21 = (point2 - point1).norm();
+    //   double norm32 = (point3 - point2).norm();
+    //   double norm13 = (point1 - point3).norm();
+    //   std::vector<Point> l2 = {point1 - k * (point2 - point1) / norm21,
+    //                            point2 + k * (point2 - point1) / norm21};
+    //   std::vector<Point> l3 = {point2 - k * (point3 - point2) / norm32,
+    //                            point3 + k * (point3 - point2) / norm32};
+    //   std::vector<Point> l4 = {point3 - k * (point1 - point3) / norm13,
+    //                            point1 + k * (point1 - point3) / norm13};
 
-      if (is_intersecting(l1, l2) || is_intersecting(l1, l3) || is_intersecting(l1, l4))
-      {
-        intersecting = true;
-        break;
-      }
-    }
+    //   if (is_intersecting(l1, l2) || is_intersecting(l1, l3) || is_intersecting(l1, l4))
+    //   {
+    //     intersecting = true;
+    //     break;
+    //   }
+    // }
     if (!intersecting) adjacent.push_back(i);
   }
   return adjacent;
@@ -221,10 +232,10 @@ void Astar::generate_plot()
 //   }
 
 //   std::vector<std::vector<Point>> finite_segments, infinite_segments;
-//   int rv_size = this->vor.ridge_vertices.size();
+//   int rv_size = this->vor.ridges.size();
 //   for (int i = 0; i < rv_size; i++)
 //   {
-//     RidgeVertex simplex = this->vor.ridge_vertices[i];
+//     RidgeVertex simplex = this->vor.ridges[i];
 
 //     // check if all simplex values are >= 0
 //     bool check = true;

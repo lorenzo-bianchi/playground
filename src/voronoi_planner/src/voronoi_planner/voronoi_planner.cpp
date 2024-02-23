@@ -137,22 +137,22 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //                    { 0.0, -0.5}},
   //                  };
 
-  Polygons polys = {
-                    {{12.5, 0.0}, {15.0, 0.0}, {15.0, 1.5}, {12.5, 1.5}},
-                    {{19.0, 1.0}, {17.0, 1.0}, {17.0, 3.0}, {19.0, 3.0}},
-                    {{14.5, 8.0}, {19.0, 8.0}, {19.0, 9.0}, {14.5, 9.0}},
-                    {{12.0, 3.0}, {12.0, 4.5}, {13.0, 4.5}, {13.0, 4.0}, {14.0, 4.0}, {14.0, 4.5}, {15.0, 4.5}, {15.0, 3.0}},
-                    {{12.0, 5.5}, {13.0, 5.5}, {13.0, 6.0}, {14.0, 6.0}, {14.0, 5.5}, {15.0, 5.5}, {15.0, 6.5}, {12.0, 6.5}},
-                    {{3.0, 3.0}, {4.0, 3.0}, {4.0, 4.0}, {3.0, 4.0}},
-                    {{3.0, 5.0}, {4.0, 5.0}, {4.0, 6.0}, {3.0, 6.0}},
-                    {{3.0, 7.0}, {4.0, 7.0}, {4.0, 8.0}, {3.0, 8.0}},
-                    {{5.0, 3.0}, {6.0, 3.0}, {6.0, 4.0}, {5.0, 4.0}},
-                    {{5.0, 5.0}, {6.0, 5.0}, {6.0, 6.0}, {5.0, 6.0}},
-                    {{5.0, 7.0}, {6.0, 7.0}, {6.0, 8.0}, {5.0, 8.0}},
-                    {{7.0, 3.0}, {8.0, 3.0}, {8.0, 4.0}, {7.0, 4.0}},
-                    {{7.0, 5.0}, {8.0, 5.0}, {8.0, 6.0}, {7.0, 6.0}},
-                    {{7.0, 7.0}, {8.0, 7.0}, {8.0, 8.0}, {7.0, 8.0}},
-                   };
+  // Polygons polys = {
+  //                   {{12.5, 0.0}, {15.0, 0.0}, {15.0, 1.5}, {12.5, 1.5}},
+  //                   {{19.0, 1.0}, {17.0, 1.0}, {17.0, 3.0}, {19.0, 3.0}},
+  //                   {{14.5, 8.0}, {19.0, 8.0}, {19.0, 9.0}, {14.5, 9.0}},
+  //                   {{12.0, 3.0}, {12.0, 4.5}, {13.0, 4.5}, {13.0, 4.0}, {14.0, 4.0}, {14.0, 4.5}, {15.0, 4.5}, {15.0, 3.0}},
+  //                   {{12.0, 5.5}, {13.0, 5.5}, {13.0, 6.0}, {14.0, 6.0}, {14.0, 5.5}, {15.0, 5.5}, {15.0, 6.5}, {12.0, 6.5}},
+  //                   {{3.0, 3.0}, {4.0, 3.0}, {4.0, 4.0}, {3.0, 4.0}},
+  //                   {{3.0, 5.0}, {4.0, 5.0}, {4.0, 6.0}, {3.0, 6.0}},
+  //                   {{3.0, 7.0}, {4.0, 7.0}, {4.0, 8.0}, {3.0, 8.0}},
+  //                   {{5.0, 3.0}, {6.0, 3.0}, {6.0, 4.0}, {5.0, 4.0}},
+  //                   {{5.0, 5.0}, {6.0, 5.0}, {6.0, 6.0}, {5.0, 6.0}},
+  //                   {{5.0, 7.0}, {6.0, 7.0}, {6.0, 8.0}, {5.0, 8.0}},
+  //                   {{7.0, 3.0}, {8.0, 3.0}, {8.0, 4.0}, {7.0, 4.0}},
+  //                   {{7.0, 5.0}, {8.0, 5.0}, {8.0, 6.0}, {7.0, 6.0}},
+  //                   {{7.0, 7.0}, {8.0, 7.0}, {8.0, 8.0}, {7.0, 8.0}},
+  //                  };
 
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -165,7 +165,6 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //   // get random number between 1 and 100
   //   double x = distribution(gen) * grid_resolution_;
   //   double y = int(distribution(gen) / 2) * grid_resolution_;
-
   //   double size;
   //   if (i < K/4)
   //     size = 0.4;
@@ -176,7 +175,6 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //   else
   //     size = 2.0;
   //   // size = 0.2;
-
   //   // append to polys the square of size 0.2 with the bottom-left corner in (x, y)
   //   double x1 = x;
   //   double x2 = std::min(x + size, 20.0);
@@ -184,74 +182,142 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //   double y2 = std::min(y + size, 10.0);
   //   polys.push_back({{x1, y1}, {x2, y1}, {x2, y2}, {x1, y2}});
   // }
-
   // Line b1 = Line({{ 1.0, -1.0}, { 1.0,  1.0}});
   // Line b2 = Line({{ 1.0,  1.0}, {-1.0,  1.0}});
   // Line b3 = Line({{-1.0,  1.0}, {-1.0, -1.0}});
   // Line b4 = Line({{-1.0, -1.0}, { 1.0, -1.0}});
-
   // Line b1 = Line({{0.0, 0.0}, {1.0, 0.0}});
   // Line b2 = Line({{1.0, 0.0}, {1.0, 1.0}});
   // Line b3 = Line({{1.0, 1.0}, {0.0, 1.0}});
   // Line b4 = Line({{0.0, 0.0}, {0.0, 1.0}});
 
-  OccupancyGrid grid(int(field_size_[1] / grid_resolution_), int(field_size_[0] / grid_resolution_));
-  grid.setZero();
-  grid.block(20, 20, 20, 20).setConstant(true);
-  grid.block(10, 70, 10, 10).setConstant(true);
-  grid.block(10, 70, 10, 10).setConstant(true);
-  // create variuos random obstacles
-  for (int i = 0; i < 50; i++)
+  // Create and populate occupancy grid
+  std::vector<int> grid_size = {int(field_size_[1] / grid_resolution_ + 1),
+                                int(field_size_[0] / grid_resolution_ + 1),
+                                int(field_size_[2] / grid_resolution_)};
+
+  OccupancyGrid3D grid3D;
+  for (int i = 0; i < grid_size[2]; i++)
   {
-    int x = distribution(gen) / 2;
-    int y = distribution(gen);
-    grid.block(x, y, 2, 2).setConstant(true);
+    OccupancyGrid2D grid2D = OccupancyGrid2D(grid_size[0], grid_size[1]);
+    grid2D.setZero();
+    grid3D.push_back(grid2D);
   }
 
+  int num_parallelepipeds = 10;
+
+  std::vector<std::vector<int>> parallelepipeds;
+  std::uniform_int_distribution<int> rand_x(10, grid_size[0] - 10);
+  std::uniform_int_distribution<int> rand_y(0, grid_size[1] - 1);
+  std::uniform_int_distribution<int> rand_width(2, grid_size[0] / 8);
+  std::uniform_int_distribution<int> rand_height(2, grid_size[1] / 4);
+  std::uniform_int_distribution<int> rand_depth(2, grid_size[2]);
+  for (int i = 0; i < num_parallelepipeds; i++)
+  {
+    int x = rand_x(gen);
+    int y = rand_y(gen);
+    int z = 0;
+    int width = rand_width(gen);
+    int height = rand_height(gen);
+    int depth = rand_depth(gen);
+
+    // insert parallelepiped in grid3D
+    for (int k = z; k < z + depth; k++)
+    {
+      for (int j = y; j < y + height; j++)
+      {
+        for (int i = x; i < x + width; i++)
+          grid3D[k](i, j) = true;
+      }
+    }
+
+  }
+  ///////////////////////////////////////////////////////////
+
+  //
   Line b1 = Line({{           0.0,            0.0}, {field_size_[0],            0.0}});
   Line b2 = Line({{field_size_[0],            0.0}, {field_size_[0], field_size_[1]}});
   Line b3 = Line({{field_size_[0], field_size_[1]}, {           0.0, field_size_[1]}});
   Line b4 = Line({{           0.0,            0.0}, {           0.0, field_size_[1]}});
-
   std::vector<Line> boundaries = {b1, b2, b3, b4};
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
   // Code to be timed
-  // Polygons polys;
-  // polys_from_grid(grid, polys);
+  int lower_layer = 0;
+  int n_layers = 4;
+
+  results.r_lengths.push_back(0);
+  results.v_lengths.push_back(0);
+
+  // TODO: threads?
+  for (int idx = lower_layer; idx < lower_layer + n_layers; idx++)
+  {
+    OccupancyGrid2D layer = grid3D[idx];
+
+    Polygons polys;
+    polys_from_grid(layer, polys);
+    if (polys.size() < 2) continue;
+
+    gen_vor = GeneralizedVoronoi();
+    gen_vor.add_polygons(polys);
+    gen_vor.add_boundaries(boundaries);
+
+    // Compute Voronoi graph
+    gen_vor.run(run_type::optimized, plot_voronoi_, idx * grid_resolution_, results);
+  }
+  results.r_lengths.push_back(results.ridges.size());
+
+  //
+  double thr = 0.2;
+  int above_layers = 1;
+
+  // print size of vertices
+  std::cout << "results.vertices.size() pre: " << results.vertices.size() << std::endl;
+  std::cout << "results.ridges.size() pre: " << results.ridges.size() << std::endl;
+  if (results.altitudes.size() > 1)
+  {
+    for (size_t i = 0; i < results.altitudes.size()-1; i++)
+    {
+      for (size_t lower_idx = results.v_lengths[i]; lower_idx < results.v_lengths[i+1]; lower_idx++)
+      {
+        Point3D lower_vertex = results.vertices[lower_idx];
+        int delta = std::min(1+above_layers, (int) (results.altitudes.size()-i));
+        for (size_t upper_idx = results.v_lengths[i+1]; upper_idx < results.v_lengths[i+delta]; upper_idx++)
+        {
+          Point3D upper_vertex = results.vertices[upper_idx];
+
+          Eigen::Vector3d hdist = (upper_vertex - lower_vertex).cwiseAbs();
+          if (hdist[0] < thr && hdist[1] < thr)
+            results.ridges.push_back({lower_idx, upper_idx});
+        }
+      }
+    }
+  }
+  std::cout << "results.vertices.size() post: " << results.vertices.size() << std::endl;
+  std::cout << "results.ridges.size() post: " << results.ridges.size() << std::endl;
+
+  //////////////////////////////////////////
 
   auto contours_end_time = std::chrono::high_resolution_clock::now();
 
-  gen_vor = GeneralizedVoronoi();
-  gen_vor.add_polygons(polys);
-  gen_vor.add_boundaries(boundaries);
 
-  // Compute Voronoi graph
-  gen_vor.run(run_type::optimized, plot_voronoi_, vor_result);
 
   auto voronoi_end_time = std::chrono::high_resolution_clock::now();
 
   // Run A* algorithm
-  start = {robot_start_[0], robot_start_[1]};
-  goal = {robot_goal_[0], robot_goal_[1]};
+  start = {robot_start_[0], robot_start_[1], robot_start_[2]};
+  goal = {robot_goal_[0], robot_goal_[1], robot_goal_[2]};
 
-  astar = Astar(vor_result, start, goal);
+  astar = Astar(results, start, goal);
   path = astar.run();
-
-  // Add z component to path points
-  path3d.resize(path.size());
-  for (size_t i = 0; i < path.size(); i++)
-  {
-    path3d[i] = {path[i][0], path[i][1], 0.0};
-  }
 
   // Filter out points too close
   size_t i = 0;
-  while (i < path3d.size() - 1)
+  while (i < path.size() - 1)
   {
-    if ((path3d[i] - path3d[i+1]).norm() < points_tresh_)
-      path3d.erase(path3d.begin() + i + 1);
+    if ((path[i] - path[i+1]).norm() < points_tresh_)
+      path.erase(path.begin() + i + 1);
     else
       i++;
   }
@@ -259,12 +325,12 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   auto astar_end_time = std::chrono::high_resolution_clock::now();
 
   // Move points
-  path3d_orig = path3d;
-  for (size_t i = 1; i < path3d.size()-1; i++)
+  path_orig = path;
+  for (size_t i = 1; i < path.size()-1; i++)
   {
-    Eigen::Vector3d a = path3d[i-1];
-    Eigen::Vector3d b = path3d[i];
-    Eigen::Vector3d c = path3d[i+1];
+    Eigen::Vector3d a = path[i-1];
+    Eigen::Vector3d b = path[i];
+    Eigen::Vector3d c = path[i+1];
 
     Eigen::Vector3d ba = (a - b);
     Eigen::Vector3d bc = (c - b);
@@ -273,12 +339,12 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
     double norm_angle = bis.norm();
     bis = bis / norm_angle;
 
-    path3d[i] = b + move_coefficient_ * norm_angle * bis;
+    path[i] = b + move_coefficient_ * norm_angle * bis;
   }
 
   // Run topp-ra
   toppra::Vectors positions;
-  for (auto& vi : path3d)
+  for (auto& vi : path)
   {
     toppra::Vector vi_eigen(vi.size());
     for (long int i = 0; i < vi.size(); i++) vi_eigen(i) = vi[i];
@@ -311,7 +377,7 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   // spline_path = std::make_shared<toppra::parametrizer::Spline>(spline_ptr, pd.gridpoints, pd.parametrization);
 
   const toppra::Bound optimized_time_interval = spline_path->pathInterval();
-  std::cout << "Optimized time: " << optimized_time_interval << "s" << std::endl;
+  std::cout << "Optimized time: " << optimized_time_interval[1] << "s" << std::endl;
   time_breaks_optimized = toppra::Vector::LinSpaced(5 * sample_points_, optimized_time_interval(0), optimized_time_interval(1));
 
   q_nominal_optimized = spline_path->eval(time_breaks_optimized, 0);
@@ -332,7 +398,7 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   }
 
   // Check if computed velocity is correct
-  Point pos = start;
+  Point3D pos = start;
   for (size_t i = 1; i < q_dot_nominal_optimized_mat.size(); i++)
   {
     pos += q_dot_nominal_optimized_mat[i] * (time_breaks_optimized[i] - time_breaks_optimized[i-1]);
@@ -382,9 +448,13 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   RCLCPP_WARN(this->get_logger(), "Total time: %ld ms", duration);
 
   // Plot
-  if (plot_voronoi_) plot_voronoi();
-LINE
-  throw std::invalid_argument("Error in generate_plot()");
+  if (plot_voronoi_)
+  {
+    if (results.altitudes.size() > 1) this->plot_voronoi_3d();
+    else plot_voronoi_2d(0);
+  }
+
+  throw std::invalid_argument("Manually stopped after generate_plot()");
 
   // Save data on file
   if (save_log_) this->save_log();

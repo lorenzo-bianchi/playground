@@ -60,6 +60,13 @@ void IndexDict::insert(int key, Chain& value)
 {
   if (contains(this->dict, key))
   {
+    // print dict and key
+    for (auto& entry : this->dict)
+    {
+      std::cout << entry.first << std::endl;
+    }
+    std::cout << key << std::endl;
+
     throw std::invalid_argument("Key already exists");
   }
 
