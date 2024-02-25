@@ -139,9 +139,6 @@ int Astar::add_ridge(Point3D point)
   this->vor.vertices.push_back(point);
   int ver_idx = this->vor.vertices.size() - 1;
 
-  // print size of ridges
-  std::cout << "this->vor.ridges.size(): " << this->vor.ridges.size() << std::endl;
-
   // append ridges
   for (int& neighbor : neighbors)
   {
@@ -159,6 +156,19 @@ std::vector<int> Astar::find_adjacent(Point3D point)
 {
   std::vector<Point3D> vertices = this->vor.vertices;
   std::vector<int> adjacent;
+  std::vector<Triangle> layers_triangles;
+
+  /*
+  // find index of altitudes vector having the same z value of point
+  size_t alt_idx = 0;
+  for (size_t i = 0; i < this->vor.altitudes.size(); i++)
+  {
+    if (abs(this->vor.altitudes[i] - point(2)) < 0.01)
+    {
+      alt_idx = i;
+      break;
+    }
+  }
 
   // find vertex that does not intersect with ridges
   for (int i = 0; i < (int) vertices.size(); i++)
@@ -181,36 +191,85 @@ std::vector<int> Astar::find_adjacent(Point3D point)
         break;
       }
     }
-    // TODO
-    // for (Triangle& tri : this->vor.triangles)
-    // {
-    //   auto points = tri.get_points();
 
-    //   Point point1 = points[0];
-    //   Point point2 = points[1];
-    //   Point point3 = points[2];
+    for (Triangle& tri : this->vor.triangles[alt_idx])
+  */
 
-    //   Point point2d(point(0), point(1));
-    //   Point vertex2d(vertices[i](0), vertices[i](1));
-    //   std::vector<Point> l1 = {point2d, vertex2d};
+  int lower_idx = 0;
+  int upper_idx = vertices.size();
+  size_t alt_idx = 0;
+  if (this->vor.altitudes.size() > 1)
+  {
+    // find index of altitudes vector having the same z value of point
+    for (size_t i = 0; i < this->vor.altitudes.size()-1; i++)
+    {
+      if (point(2) >= this->vor.altitudes[i] && point(2) < this->vor.altitudes[i+1])
+      {
+        alt_idx = i;
+        break;
+      }
+    }
 
-    //   double k = 0.2; // TODO: line_increase_;
-    //   double norm21 = (point2 - point1).norm();
-    //   double norm32 = (point3 - point2).norm();
-    //   double norm13 = (point1 - point3).norm();
-    //   std::vector<Point> l2 = {point1 - k * (point2 - point1) / norm21,
-    //                            point2 + k * (point2 - point1) / norm21};
-    //   std::vector<Point> l3 = {point2 - k * (point3 - point2) / norm32,
-    //                            point3 + k * (point3 - point2) / norm32};
-    //   std::vector<Point> l4 = {point3 - k * (point1 - point3) / norm13,
-    //                            point1 + k * (point1 - point3) / norm13};
+    // find vertex that does not intersect with ridges
+    lower_idx = this->vor.v_lengths[alt_idx];
+    upper_idx = this->vor.v_lengths[alt_idx+1];
 
-    //   if (is_intersecting(l1, l2) || is_intersecting(l1, l3) || is_intersecting(l1, l4))
-    //   {
-    //     intersecting = true;
-    //     break;
-    //   }
-    // }
+    layers_triangles.insert(layers_triangles.end(), this->vor.triangles[alt_idx].begin(), this->vor.triangles[alt_idx].end());
+    layers_triangles.insert(layers_triangles.end(), this->vor.triangles[alt_idx+1].begin(), this->vor.triangles[alt_idx+1].end());
+  }
+  else
+    layers_triangles = this->vor.triangles[0];
+
+  for (int i = lower_idx; i < upper_idx; i++)
+  {
+    bool intersecting = false;
+    for (RidgeVertex& ridge_vertex : this->vor.ridges)
+    {
+      if (i == ridge_vertex[0] || i == ridge_vertex[1]) continue;
+
+      Point point2d(point(0), point(1));
+      Point vertex2d(vertices[i](0), vertices[i](1));
+      std::vector<Point> l1 = {point2d, vertex2d};
+
+      Point vertex2dA(vertices[ridge_vertex[0]](0), vertices[ridge_vertex[0]](1));
+      Point vertex2dB(vertices[ridge_vertex[1]](0), vertices[ridge_vertex[1]](1));
+      std::vector<Point> l2 = {vertex2dA, vertex2dB};
+      if (is_intersecting(l1, l2))
+      {
+        intersecting = true;
+        break;
+      }
+    }
+
+    for (Triangle& tri : layers_triangles)
+    {
+      auto points = tri.get_points();
+
+      Point point1 = points[0];
+      Point point2 = points[1];
+      Point point3 = points[2];
+
+      Point point2d(point(0), point(1));
+      Point vertex2d(vertices[i](0), vertices[i](1));
+      std::vector<Point> l1 = {point2d, vertex2d};
+
+      double k = 0.2; // TODO: line_increase_;
+      double norm21 = (point2 - point1).norm();
+      double norm32 = (point3 - point2).norm();
+      double norm13 = (point1 - point3).norm();
+      std::vector<Point> l2 = {point1 - k * (point2 - point1) / norm21,
+                               point2 + k * (point2 - point1) / norm21};
+      std::vector<Point> l3 = {point2 - k * (point3 - point2) / norm32,
+                               point3 + k * (point3 - point2) / norm32};
+      std::vector<Point> l4 = {point3 - k * (point1 - point3) / norm13,
+                               point1 + k * (point1 - point3) / norm13};
+
+      if (is_intersecting(l1, l2) || is_intersecting(l1, l3) || is_intersecting(l1, l4))
+      {
+        intersecting = true;
+        break;
+      }
+    }
     if (!intersecting) adjacent.push_back(i);
   }
   return adjacent;

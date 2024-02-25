@@ -30,7 +30,8 @@ find_package(params_manager REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-find_package(toppra)
+find_package(toppra REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 # Generate parameters source code
 generate_init_parameters(
@@ -63,7 +64,8 @@ ament_target_dependencies(voronoi_planner
   dua_qos
   params_manager
   rclcpp
-  rclcpp_components)
+  rclcpp_components
+  visualization_msgs)
 rclcpp_components_register_nodes(voronoi_planner "VoronoiPlanner::VoronoiPlannerNode")
 
 # Voronoi Planner standalone application

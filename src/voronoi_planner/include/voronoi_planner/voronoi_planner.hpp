@@ -27,6 +27,8 @@
 #ifndef VORONOI_PLANNER_HPP
 #define VORONOI_PLANNER_HPP
 
+#include <voronoi_planner/rdp.hpp>
+
 #include <algorithm>
 #include <atomic>
 #include <cfloat>
@@ -47,8 +49,10 @@
 #include <unistd.h>
 
 #include <dua_node/dua_node.hpp>
-#include <opencv2/opencv.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+
+#include <opencv2/opencv.hpp>
 
 #include "libqhullcpp/RboxPoints.h"
 #include "libqhullcpp/QhullError.h"
@@ -381,10 +385,6 @@ double radian(Eigen::Vector2d& v1, Eigen::Vector2d& v2);
 double total_distance(std::vector<Point>& path);
 std::vector<Triangle> triangulation(Polygon& polygon);
 
-// RDP
-double perpendicular_distance(Point& pt, Point& lineStart, Point& lineEnd);
-void ramer_douglas_peucker(VertexChain& pointList, double epsilon, VertexChain& out);
-
 // Tricpp
 double calculate_total_area(std::vector<Triangle>& triangles);
 bool contains_no_points(Point& p1, Point& p2, Point& p3, Polygon& polygon);
@@ -413,7 +413,13 @@ public:
 
 private:
   /* Publishers */
-  // rclcpp::Publisher<voronoi_planner_msgs::msg::VoronoiPlanner>::SharedPtr joy_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
+
+  /* Timers */
+  rclcpp::TimerBase::SharedPtr visualization_timer_;
+
+  /* Callbacks */
+  void visualization_timer_clbk();
 
   /* Utility routines */
   void plot_voronoi_2d(int layer);
@@ -431,6 +437,10 @@ private:
   double distance_tresh_;
   std::vector<double> field_size_;
   double grid_resolution_;
+  int64_t layers_above_;
+  int64_t layers_graph_3d_;
+  int64_t layers_lower_;
+  double layers_threshold_;
   double line_increase_;
   double max_acc_;
   double max_vel_;
@@ -439,11 +449,13 @@ private:
   bool plot_voronoi_;
   double point_distance_;
   double points_tresh_;
-  double rdp_epsilon_;
+  double rdp_epsilon_astar_;
+  double rdp_epsilon_voronoi_;
   std::vector<double> robot_goal_;
   std::vector<double> robot_start_;
   int64_t sample_points_;
   bool save_log_;
+  int64_t seed_;
   int64_t spline_bc_order_;
   std::vector<double> spline_bc_values_;
 
@@ -454,6 +466,7 @@ private:
   void init_atomics();
   void init_parameters();
   void init_publishers();
+  void init_timers();
   void init_toppra();
 
   /* Internal state variables */
@@ -483,6 +496,8 @@ private:
   toppra::Vectors q_nominal_optimized;
   toppra::Vectors q_dot_nominal_optimized;
   toppra::Vectors q_ddot_nominal_optimized;
+
+  OccupancyGrid3D grid3D;
 };
 
 } // namespace VoronoiPlanner

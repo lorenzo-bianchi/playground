@@ -50,13 +50,16 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   // Initialize topic publishers
   init_publishers();
 
+  // Initialize timers
+  init_timers();
+
   // Initialize TOPP-RA variables
   init_toppra();
 
   // Initialize static variables
   Line::point_distance = point_distance_;
   Triangle::distance_tresh = distance_tresh_;
-  GeneralizedVoronoi::rdp_epsilon = rdp_epsilon_;
+  GeneralizedVoronoi::rdp_epsilon = rdp_epsilon_voronoi_;
 
   // Test
   // Polygons polys = {
@@ -154,9 +157,9 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //                   {{7.0, 7.0}, {8.0, 7.0}, {8.0, 8.0}, {7.0, 8.0}},
   //                  };
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_int_distribution<> distribution(5, 95);
+  // std::random_device rd;
+  // std::mt19937 gen(rd());
+  //std::uniform_int_distribution<> distribution(5, 95);
 
   // Polygons polys;
   // int K = 10;
@@ -196,7 +199,6 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
                                 int(field_size_[0] / grid_resolution_ + 1),
                                 int(field_size_[2] / grid_resolution_)};
 
-  OccupancyGrid3D grid3D;
   for (int i = 0; i < grid_size[2]; i++)
   {
     OccupancyGrid2D grid2D = OccupancyGrid2D(grid_size[0], grid_size[1]);
@@ -204,14 +206,14 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
     grid3D.push_back(grid2D);
   }
 
-  int num_parallelepipeds = 10;
-
-  std::vector<std::vector<int>> parallelepipeds;
-  std::uniform_int_distribution<int> rand_x(10, grid_size[0] - 10);
-  std::uniform_int_distribution<int> rand_y(0, grid_size[1] - 1);
-  std::uniform_int_distribution<int> rand_width(2, grid_size[0] / 8);
-  std::uniform_int_distribution<int> rand_height(2, grid_size[1] / 4);
+  std::mt19937 gen(seed_);
+  std::uniform_int_distribution<int> rand_x(10, grid_size[1] - 10);
+  std::uniform_int_distribution<int> rand_y(0, grid_size[0] - 1);
+  std::uniform_int_distribution<int> rand_width(2, grid_size[1] / 8);
+  std::uniform_int_distribution<int> rand_height(2, grid_size[0] / 4);
   std::uniform_int_distribution<int> rand_depth(2, grid_size[2]);
+
+  int num_parallelepipeds = 30;
   for (int i = 0; i < num_parallelepipeds; i++)
   {
     int x = rand_x(gen);
@@ -224,14 +226,14 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
     // insert parallelepiped in grid3D
     for (int k = z; k < z + depth; k++)
     {
-      for (int j = y; j < y + height; j++)
+      for (int i = y; i < std::min(y + height, grid_size[0]-1); i++)
       {
-        for (int i = x; i < x + width; i++)
+        for (int j = x; j < std::min(x + width, grid_size[1]-10); j++)
           grid3D[k](i, j) = true;
       }
     }
-
   }
+
   ///////////////////////////////////////////////////////////
 
   //
@@ -244,14 +246,11 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   auto start_time = std::chrono::high_resolution_clock::now();
 
   // Code to be timed
-  int lower_layer = 0;
-  int n_layers = 4;
-
   results.r_lengths.push_back(0);
   results.v_lengths.push_back(0);
 
   // TODO: threads?
-  for (int idx = lower_layer; idx < lower_layer + n_layers; idx++)
+  for (int idx = layers_lower_; idx < layers_lower_ + layers_graph_3d_; idx++)
   {
     OccupancyGrid2D layer = grid3D[idx];
 
@@ -269,12 +268,6 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   results.r_lengths.push_back(results.ridges.size());
 
   //
-  double thr = 0.2;
-  int above_layers = 1;
-
-  // print size of vertices
-  std::cout << "results.vertices.size() pre: " << results.vertices.size() << std::endl;
-  std::cout << "results.ridges.size() pre: " << results.ridges.size() << std::endl;
   if (results.altitudes.size() > 1)
   {
     for (size_t i = 0; i < results.altitudes.size()-1; i++)
@@ -282,28 +275,22 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
       for (size_t lower_idx = results.v_lengths[i]; lower_idx < results.v_lengths[i+1]; lower_idx++)
       {
         Point3D lower_vertex = results.vertices[lower_idx];
-        int delta = std::min(1+above_layers, (int) (results.altitudes.size()-i));
+        int delta = std::min(1+(int) layers_above_, (int) (results.altitudes.size()-i));
         for (size_t upper_idx = results.v_lengths[i+1]; upper_idx < results.v_lengths[i+delta]; upper_idx++)
         {
           Point3D upper_vertex = results.vertices[upper_idx];
 
           Eigen::Vector3d hdist = (upper_vertex - lower_vertex).cwiseAbs();
-          if (hdist[0] < thr && hdist[1] < thr)
+          if (hdist[0] < layers_threshold_ && hdist[1] < layers_threshold_)
             results.ridges.push_back({lower_idx, upper_idx});
         }
       }
     }
   }
-  std::cout << "results.vertices.size() post: " << results.vertices.size() << std::endl;
-  std::cout << "results.ridges.size() post: " << results.ridges.size() << std::endl;
 
   //////////////////////////////////////////
 
-  auto contours_end_time = std::chrono::high_resolution_clock::now();
-
-
-
-  auto voronoi_end_time = std::chrono::high_resolution_clock::now();
+  auto contours_voronoi_end_time = std::chrono::high_resolution_clock::now();
 
   // Run A* algorithm
   start = {robot_start_[0], robot_start_[1], robot_start_[2]};
@@ -312,7 +299,9 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   astar = Astar(results, start, goal);
   path = astar.run();
 
-  // Filter out points too close
+  // Filter out points too close using rdp
+  std::vector<Point3D> path_temp = path;
+  ramer_douglas_peucker(path_temp, rdp_epsilon_astar_, path);
   size_t i = 0;
   while (i < path.size() - 1)
   {
@@ -436,13 +425,11 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
 
   /////////////////////////////////////////
 
-  auto duration_contours = std::chrono::duration_cast<std::chrono::milliseconds>(contours_end_time - start_time).count();
-  auto duration_voronoi = std::chrono::duration_cast<std::chrono::milliseconds>(voronoi_end_time - contours_end_time).count();
-  auto duration_astar = std::chrono::duration_cast<std::chrono::milliseconds>(astar_end_time - voronoi_end_time).count();
+  auto duration_contours_voronoi = std::chrono::duration_cast<std::chrono::milliseconds>(contours_voronoi_end_time - start_time).count();
+  auto duration_astar = std::chrono::duration_cast<std::chrono::milliseconds>(astar_end_time - contours_voronoi_end_time).count();
   auto duration_spline = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - astar_end_time).count();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-  RCLCPP_WARN(this->get_logger(), "Contours time: %ld ms", duration_contours);
-  RCLCPP_WARN(this->get_logger(), "Voronoi time: %ld ms", duration_voronoi);
+  RCLCPP_WARN(this->get_logger(), "Contours + V3D time: %ld ms", duration_contours_voronoi);
   RCLCPP_WARN(this->get_logger(), "A* time: %ld ms", duration_astar);
   RCLCPP_WARN(this->get_logger(), "Spline time: %ld ms", duration_spline);
   RCLCPP_WARN(this->get_logger(), "Total time: %ld ms", duration);
@@ -454,7 +441,7 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
     else plot_voronoi_2d(0);
   }
 
-  throw std::invalid_argument("Manually stopped after generate_plot()");
+  // layers_thresholdow std::invalid_argument("Manually stopped after generate_plot()");
 
   // Save data on file
   if (save_log_) this->save_log();
@@ -482,11 +469,24 @@ void VoronoiPlannerNode::init_atomics()
  */
 void VoronoiPlannerNode::init_publishers()
 {
-  // VoronoiPlanner
-  // joy_pub_ = this->create_publisher<voronoi_planner_msgs::msg::VoronoiPlanner>(
-  //   joy_topic_name,
-  //   rclcpp::QoS(1));
+  // Marker array
+  marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+    "/test/obstacles",
+    rclcpp::QoS(1));
 }
+
+/**
+ * @brief Routine to initialize timers.
+ */
+void VoronoiPlannerNode::init_timers()
+{
+  visualization_timer_ = this->create_wall_timer(
+    std::chrono::duration<double>(5.0),
+    std::bind(
+        &VoronoiPlannerNode::visualization_timer_clbk,
+        this));
+}
+
 
 /**
  * @brief Routine to initialize topic publishers.

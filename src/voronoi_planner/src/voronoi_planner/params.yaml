@@ -36,6 +36,50 @@ params:
     read_only: true
     var_name: field_size_
 
+  layers_above:
+    type: integer
+    default_value: 0
+    min_value: 0
+    max_value: 10
+    step: 1
+    description: "Number of layers to check for vertical edges in 3D graph."
+    constraints: "Cannot be changed."
+    read_only: true
+    var_name: layers_above_
+
+  layers_graph_3d:
+    type: integer
+    default_value: 0
+    min_value: 0
+    max_value: 10
+    step: 1
+    description: "3D graph number of layers."
+    constraints: "Cannot be changed."
+    read_only: true
+    var_name: layers_graph_3d_
+
+  layers_lower:
+    type: integer
+    default_value: 0
+    min_value: 0
+    max_value: 10
+    step: 1
+    description: "Graph's lower layer number."
+    constraints: "Cannot be changed."
+    read_only: true
+    var_name: layers_lower_
+
+  layers_threshold:
+    type: double
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 10.0
+    step: 0.0
+    description: "Maximum horizontal displacement to connect vertices in different layers."
+    constraints: "In meters. Cannot be changed."
+    read_only: true
+    var_name: layers_threshold_
+
   line_increase:
     type: double
     default_value: 0.0
@@ -132,16 +176,27 @@ params:
     read_only: false
     var_name: robot_start_
 
-  rdp_epsilon:
+  rdp_epsilon_astar:
     type: double
     default_value: 0.0
     min_value: 0.0
-    max_value: 100000
+    max_value: 100
+    step: 0.0
+    description: "RDP epsilon to reduce points number after A*."
+    constraints: "Can be changed."
+    read_only: false
+    var_name: rdp_epsilon_astar_
+
+  rdp_epsilon_voronoi:
+    type: double
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 100
     step: 0.0
     description: "RDP epsilon in class GeneralizedVoronoi."
     constraints: "Can be changed."
     read_only: false
-    var_name: rdp_epsilon_
+    var_name: rdp_epsilon_voronoi_
 
   points_tresh:
     type: double
@@ -172,6 +227,17 @@ params:
     constraints: "Cannot be changed."
     read_only: true
     var_name: save_log_
+
+  seed:
+    type: integer
+    default_value: 0
+    min_value: 0
+    max_value: 100000
+    step: 1
+    description: "Seed number."
+    constraints: "Cannot be changed."
+    read_only: true
+    var_name: seed_
 
   spline_bc_order:
     type: integer

@@ -29,6 +29,99 @@
 namespace VoronoiPlanner
 {
 /*  */
+void VoronoiPlannerNode::visualization_timer_clbk()
+{
+  // publish marker array with obstacles
+  visualization_msgs::msg::MarkerArray marker_array;
+  for (size_t i = 0; i < grid3D.size(); i++)
+  {
+    for (size_t j = 0; j < (size_t) grid3D[i].rows(); j++)
+    {
+      for (size_t k = 0; k < (size_t) grid3D[i].cols(); k++)
+      {
+        if (grid3D[i](j, k))
+        {
+          visualization_msgs::msg::Marker marker;
+          marker.header.frame_id = "map";
+          marker.header.stamp = this->now();
+          marker.ns = "obstacles";
+          marker.id = i * grid3D[i].rows() * grid3D[i].cols() + j * grid3D[i].cols() + k;
+          marker.type = visualization_msgs::msg::Marker::CUBE;
+          marker.action = visualization_msgs::msg::Marker::ADD;
+          marker.pose.position.x = k * grid_resolution_;
+          marker.pose.position.y = j * grid_resolution_;
+          marker.pose.position.z = i * grid_resolution_;
+          marker.pose.orientation.x = 0.0;
+          marker.pose.orientation.y = 0.0;
+          marker.pose.orientation.z = 0.0;
+          marker.pose.orientation.w = 1.0;
+          marker.scale.x = grid_resolution_;
+          marker.scale.y = grid_resolution_;
+          marker.scale.z = grid_resolution_;
+          marker.color.a = 1.0;
+          marker.color.r = 0.0;
+          marker.color.g = 0.0;
+          marker.color.b = 1.0;
+          marker_array.markers.push_back(marker);
+        }
+      }
+    }
+  }
+
+  // publish path points as marker array
+  for (size_t i = 0; i < path_orig.size(); i++)
+  {
+    visualization_msgs::msg::Marker path_marker;
+    path_marker.header.frame_id = "map";
+    path_marker.header.stamp = this->now();
+    path_marker.id = 1000+i;
+    path_marker.type = visualization_msgs::msg::Marker::SPHERE;
+    path_marker.action = visualization_msgs::msg::Marker::ADD;
+    path_marker.pose.position.x = path_orig[i][0];
+    path_marker.pose.position.y = path_orig[i][1];
+    path_marker.pose.position.z = path_orig[i][2];
+    path_marker.scale.x = 0.2;
+    path_marker.scale.y = 0.2;
+    path_marker.scale.z = 0.2;
+    path_marker.color.r = 0.0;
+    path_marker.color.g = 1.0;
+    path_marker.color.b = 0.0;
+    path_marker.color.a = 1.0;
+
+    marker_array.markers.push_back(path_marker);
+  }
+
+  // publish pv = spline.eval(times, 0); as marker array
+  visualization_msgs::msg::Marker pv_marker;
+  pv_marker.header.frame_id = "map";
+  pv_marker.header.stamp = this->now();
+  pv_marker.ns = "pv";
+  pv_marker.id = 1;
+  pv_marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+  pv_marker.action = visualization_msgs::msg::Marker::ADD;
+  pv_marker.pose.orientation.w = 1.0;
+  pv_marker.scale.x = 0.1;
+  pv_marker.scale.y = 0.1;
+  pv_marker.scale.z = 0.1;
+  pv_marker.color.a = 1.0;
+  pv_marker.color.r = 1.0;
+  pv_marker.color.g = 0.0;
+  pv_marker.color.b = 0.0;
+  for (size_t i = 0; i < pv.size(); i++)
+  {
+    geometry_msgs::msg::Point p;
+    p.x = pv[i][0];
+    p.y = pv[i][1];
+    p.z = pv[i][2];
+    pv_marker.points.push_back(p);
+  }
+  marker_array.markers.push_back(pv_marker);
+
+  RCLCPP_INFO(this->get_logger(), "Publishing marker array with obstacles");
+  marker_pub_->publish(marker_array);
+}
+
+/*  */
 double VoronoiPlannerNode::spline_length(toppra::Vectors s, int64_t sample_points)
 {
   double length = 0.0;
