@@ -1,0 +1,34 @@
+# Find path action.
+#
+# Alessandro Tenaglia <alessandro.tenaglia42@gmail.com>
+# Intelligent Systems Lab <isl.torvergata@gmail.com>
+#
+# June 13, 2023
+
+# This is free software.
+# You can redistribute it and/or modify this file under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 3 of the License, or (at your option) any later
+# version.
+#
+# This file is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this file; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# GOAL
+# Target position coordinates
+geometry_msgs/Point target
+---
+# RESULT
+# Operation result
+dua_interfaces/CommandResultStamped result
+---
+# FEEDBACK
+# Sequence number
+int32 seq
+# Path to reach the target
+geometry_msgs/Point[] path
