@@ -1,11 +1,11 @@
 /voronoi_planner:
   ros__parameters:
-    distance_tresh: 0.4
+    distance_tresh: 0.5
     field_size: [20.0, 10.0, 3.0]
     grid_resolution: 0.2
     layers_above: 2
-    layers_graph_3d: 6
-    layers_lower: 6
+    layers_graph_3d: 4
+    layers_lower: 7
     layers_threshold: 0.5
     line_increase: 0.1
     max_acc: 1.0
@@ -15,12 +15,12 @@
     plot_size: [1500, 800]
     point_distance: 0.2
     points_tresh: 0.4
-    rdp_epsilon_astar: 0.05
+    rdp_epsilon_astar: 0.1
     rdp_epsilon_voronoi: 0.1
-    robot_goal: [14.5, 2.0, 2.2]
-    robot_start: [1.0, 7.5, 0.7]
+    robot_goal: [16.5, 6.0, 1.68]
+    robot_start: [1.0, 7.5, 2.52]
     sample_points: 100
     save_log: false
-    seed: 2
+    seed: 18
     spline_bc_order: 2
     spline_bc_values: [0.0, 0.0, 0.0]

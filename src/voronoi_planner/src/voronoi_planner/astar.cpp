@@ -78,7 +78,6 @@ Astar::Node* Astar::astar()
   return nullptr;
 }
 
-
 /*  */
 std::vector<Point3D> Astar::run()
 {
@@ -154,9 +153,11 @@ int Astar::add_ridge(Point3D point)
 /*  */
 std::vector<int> Astar::find_adjacent(Point3D point)
 {
-  std::vector<Point3D> vertices = this->vor.vertices;
+  std::vector<Point3D>& vertices = this->vor.vertices;
   std::vector<int> adjacent;
   std::vector<Triangle> layers_triangles;
+
+  std::cout << "point: " << point.transpose() << std::endl;
 
   /*
   // find index of altitudes vector having the same z value of point
@@ -195,36 +196,49 @@ std::vector<int> Astar::find_adjacent(Point3D point)
     for (Triangle& tri : this->vor.triangles[alt_idx])
   */
 
-  int lower_idx = 0;
-  int upper_idx = vertices.size();
+  int lower_idx_vec = 0;
+  int upper_idx_vec = vertices.size();
+  int lower_idx_rid = 0;
+  int upper_idx_rid = this->vor.ridges.size();
   size_t alt_idx = 0;
+
   if (this->vor.altitudes.size() > 1)
   {
     // find index of altitudes vector having the same z value of point
-    for (size_t i = 0; i < this->vor.altitudes.size()-1; i++)
+    if (point(2) < this->vor.altitudes.front()) alt_idx = 0;
+    else if (point(2) > this->vor.altitudes.back()) alt_idx = this->vor.altitudes.size()-1;
+    else
     {
-      if (point(2) >= this->vor.altitudes[i] && point(2) < this->vor.altitudes[i+1])
+      for (size_t i = 0; i < this->vor.altitudes.size()-1; i++)
       {
-        alt_idx = i;
-        break;
+        if (this->vor.altitudes[i] <= point(2) && point(2) <= this->vor.altitudes[i+1])
+        {
+          alt_idx = i;
+          break;
+        }
       }
     }
 
     // find vertex that does not intersect with ridges
-    lower_idx = this->vor.v_lengths[alt_idx];
-    upper_idx = this->vor.v_lengths[alt_idx+1];
+    lower_idx_vec = this->vor.v_lengths[alt_idx];
+    upper_idx_vec = this->vor.v_lengths[alt_idx+1];
+
+    lower_idx_rid = this->vor.r_lengths[alt_idx];
+    upper_idx_rid = this->vor.r_lengths[alt_idx+1];
 
     layers_triangles.insert(layers_triangles.end(), this->vor.triangles[alt_idx].begin(), this->vor.triangles[alt_idx].end());
-    layers_triangles.insert(layers_triangles.end(), this->vor.triangles[alt_idx+1].begin(), this->vor.triangles[alt_idx+1].end());
+    if (alt_idx+1 < this->vor.altitudes.size())
+      layers_triangles.insert(layers_triangles.end(), this->vor.triangles[alt_idx+1].begin(), this->vor.triangles[alt_idx+1].end());
   }
   else
     layers_triangles = this->vor.triangles[0];
 
-  for (int i = lower_idx; i < upper_idx; i++)
+  for (int i = lower_idx_vec; i < upper_idx_vec; i++)
   {
     bool intersecting = false;
-    for (RidgeVertex& ridge_vertex : this->vor.ridges)
+    for (int j = lower_idx_rid; j < upper_idx_rid; j++)
     {
+      RidgeVertex ridge_vertex = this->vor.ridges[j];
       if (i == ridge_vertex[0] || i == ridge_vertex[1]) continue;
 
       Point point2d(point(0), point(1));
@@ -270,7 +284,12 @@ std::vector<int> Astar::find_adjacent(Point3D point)
         break;
       }
     }
-    if (!intersecting) adjacent.push_back(i);
+
+    if (!intersecting)
+    {
+      std::cout << "i: " << i << std::endl;
+      adjacent.push_back(i);
+    }
   }
   return adjacent;
 }

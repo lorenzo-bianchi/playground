@@ -22,12 +22,15 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(dua_app_management REQUIRED)
+find_package(dua_interfaces REQUIRED)
 find_package(dua_node REQUIRED)
 find_package(dua_qos REQUIRED)
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 find_package(OpenCV 4.7.0 REQUIRED)
 find_package(params_manager REQUIRED)
+find_package(playground_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(toppra REQUIRED)
@@ -60,10 +63,13 @@ target_link_libraries(voronoi_planner
   toppra::toppra)
 ament_target_dependencies(voronoi_planner
   dua_app_management
+  dua_interfaces
   dua_node
   dua_qos
   params_manager
+  playground_interfaces
   rclcpp
+  rclcpp_action
   rclcpp_components
   visualization_msgs)
 rclcpp_components_register_nodes(voronoi_planner "VoronoiPlanner::VoronoiPlannerNode")

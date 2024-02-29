@@ -47,26 +47,31 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   // Initialize atomic members
   init_atomics();
 
+  // Initialize callback groups
+  init_cgroups();
+
   // Initialize topic publishers
   init_publishers();
 
   // Initialize timers
-  init_timers();
+  //init_timers();
+
+  // Initialize actions
+  init_actions();
 
   // Initialize TOPP-RA variables
   init_toppra();
 
   // Initialize static variables
-  Line::point_distance = point_distance_;
-  Triangle::distance_tresh = distance_tresh_;
-  GeneralizedVoronoi::rdp_epsilon = rdp_epsilon_voronoi_;
+  init_static_vars();
+
+  //////////////////////////////////////////
 
   // Test
   // Polygons polys = {
   //                   {{0.08, 0.08}, {0.08, 0.3}, {0.3, 0.3}, {0.3, 0.08}},
   //                   {{0.3, 0.5}, {0.35, 0.55}, {0.3, 0.6}, {0.45, 0.65}, {0.5, 0.5}, {0.4, 0.45}, {0.4, 0.4}},
   //                  };
-
   // Polygons polys = {
   //                   {{0.23943661971830987, 0.7295774647887324},
   //                     {0.33943661971830985, 0.7309859154929578},
@@ -132,14 +137,12 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //                     {0.3450704225352113, 0.3323943661971831},
   //                     {0.23661971830985917, 0.32816901408450705}}
   //                 };
-
   // Polygons polys = {
   //                   {{ 0.5,  0.0},
   //                    { 0.0,  0.5},
   //                    {-0.5,  0.0},
   //                    { 0.0, -0.5}},
   //                  };
-
   // Polygons polys = {
   //                   {{12.5, 0.0}, {15.0, 0.0}, {15.0, 1.5}, {12.5, 1.5}},
   //                   {{19.0, 1.0}, {17.0, 1.0}, {17.0, 3.0}, {19.0, 3.0}},
@@ -156,11 +159,9 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
   //                   {{7.0, 5.0}, {8.0, 5.0}, {8.0, 6.0}, {7.0, 6.0}},
   //                   {{7.0, 7.0}, {8.0, 7.0}, {8.0, 8.0}, {7.0, 8.0}},
   //                  };
-
   // std::random_device rd;
   // std::mt19937 gen(rd());
   //std::uniform_int_distribution<> distribution(5, 95);
-
   // Polygons polys;
   // int K = 10;
   // for (int i = 1; i < K; i++)
@@ -234,217 +235,53 @@ VoronoiPlannerNode::VoronoiPlannerNode(const rclcpp::NodeOptions & node_options)
     }
   }
 
-  ///////////////////////////////////////////////////////////
+  // // delete all previous markers
+  //visualization_msgs::msg::MarkerArray marker_array;
+  // visualization_msgs::msg::Marker marker;
+  // marker.action = visualization_msgs::msg::Marker::DELETEALL;
+  // marker_array.markers.push_back(marker);
+  // marker_pub_->publish(marker_array);
 
-  //
-  Line b1 = Line({{           0.0,            0.0}, {field_size_[0],            0.0}});
-  Line b2 = Line({{field_size_[0],            0.0}, {field_size_[0], field_size_[1]}});
-  Line b3 = Line({{field_size_[0], field_size_[1]}, {           0.0, field_size_[1]}});
-  Line b4 = Line({{           0.0,            0.0}, {           0.0, field_size_[1]}});
-  std::vector<Line> boundaries = {b1, b2, b3, b4};
-
-  auto start_time = std::chrono::high_resolution_clock::now();
-
-  // Code to be timed
-  results.r_lengths.push_back(0);
-  results.v_lengths.push_back(0);
-
-  // TODO: threads?
-  for (int idx = layers_lower_; idx < layers_lower_ + layers_graph_3d_; idx++)
-  {
-    OccupancyGrid2D layer = grid3D[idx];
-
-    Polygons polys;
-    polys_from_grid(layer, polys);
-    if (polys.size() < 2) continue;
-
-    gen_vor = GeneralizedVoronoi();
-    gen_vor.add_polygons(polys);
-    gen_vor.add_boundaries(boundaries);
-
-    // Compute Voronoi graph
-    gen_vor.run(run_type::optimized, plot_voronoi_, idx * grid_resolution_, results);
-  }
-  results.r_lengths.push_back(results.ridges.size());
-
-  //
-  if (results.altitudes.size() > 1)
-  {
-    for (size_t i = 0; i < results.altitudes.size()-1; i++)
-    {
-      for (size_t lower_idx = results.v_lengths[i]; lower_idx < results.v_lengths[i+1]; lower_idx++)
-      {
-        Point3D lower_vertex = results.vertices[lower_idx];
-        int delta = std::min(1+(int) layers_above_, (int) (results.altitudes.size()-i));
-        for (size_t upper_idx = results.v_lengths[i+1]; upper_idx < results.v_lengths[i+delta]; upper_idx++)
-        {
-          Point3D upper_vertex = results.vertices[upper_idx];
-
-          Eigen::Vector3d hdist = (upper_vertex - lower_vertex).cwiseAbs();
-          if (hdist[0] < layers_threshold_ && hdist[1] < layers_threshold_)
-            results.ridges.push_back({lower_idx, upper_idx});
-        }
-      }
-    }
-  }
-
-  //////////////////////////////////////////
-
-  auto contours_voronoi_end_time = std::chrono::high_resolution_clock::now();
-
-  // Run A* algorithm
-  start = {robot_start_[0], robot_start_[1], robot_start_[2]};
-  goal = {robot_goal_[0], robot_goal_[1], robot_goal_[2]};
-
-  astar = Astar(results, start, goal);
-  path = astar.run();
-
-  // Filter out points too close using rdp
-  std::vector<Point3D> path_temp = path;
-  ramer_douglas_peucker(path_temp, rdp_epsilon_astar_, path);
-  size_t i = 0;
-  while (i < path.size() - 1)
-  {
-    if ((path[i] - path[i+1]).norm() < points_tresh_)
-      path.erase(path.begin() + i + 1);
-    else
-      i++;
-  }
-
-  auto astar_end_time = std::chrono::high_resolution_clock::now();
-
-  // Move points
-  path_orig = path;
-  for (size_t i = 1; i < path.size()-1; i++)
-  {
-    Eigen::Vector3d a = path[i-1];
-    Eigen::Vector3d b = path[i];
-    Eigen::Vector3d c = path[i+1];
-
-    Eigen::Vector3d ba = (a - b);
-    Eigen::Vector3d bc = (c - b);
-
-    Eigen::Vector3d bis = ba + bc;
-    double norm_angle = bis.norm();
-    bis = bis / norm_angle;
-
-    path[i] = b + move_coefficient_ * norm_angle * bis;
-  }
-
-  // Run topp-ra
-  toppra::Vectors positions;
-  for (auto& vi : path)
-  {
-    toppra::Vector vi_eigen(vi.size());
-    for (long int i = 0; i < vi.size(); i++) vi_eigen(i) = vi[i];
-    positions.push_back(vi_eigen);
-  }
-
-  int N = positions.size();
-  times.resize(N);
-  for (int i = 0; i < N; i++) times[i] = i / double(N-1);
-
-  toppra::BoundaryCond bc_start = toppra::BoundaryCond(spline_bc_order_, spline_bc_values_);
-  toppra::BoundaryCond bc_end = toppra::BoundaryCond(spline_bc_order_, spline_bc_values_);
-  //toppra::BoundaryCond bc = toppra::BoundaryCond("natural");  // "notaknot", "clamped", "natural", "manual
-  toppra::BoundaryCondFull bc_type{bc_start, bc_end};
-
-  toppra::PiecewisePolyPath spline = toppra::PiecewisePolyPath::CubicSpline(positions, times, bc_type);
-  std::shared_ptr<toppra::PiecewisePolyPath> spline_ptr = std::make_shared<toppra::PiecewisePolyPath>(spline);
-
-  times.resize(sample_points_);
-  for (int i = 0; i < sample_points_; i++)
-    times[i] = i / double(sample_points_-1);
-
-  // Compute velocity profile
-  toppra::algorithm::TOPPRA problem{constrains, spline_ptr};
-  problem.computePathParametrization(0, 0);
-
-  pd = problem.getParameterizationData();
-
-  spline_path = std::make_shared<toppra::parametrizer::ConstAccel>(spline_ptr, pd.gridpoints, pd.parametrization);
-  // spline_path = std::make_shared<toppra::parametrizer::Spline>(spline_ptr, pd.gridpoints, pd.parametrization);
-
-  const toppra::Bound optimized_time_interval = spline_path->pathInterval();
-  std::cout << "Optimized time: " << optimized_time_interval[1] << "s" << std::endl;
-  time_breaks_optimized = toppra::Vector::LinSpaced(5 * sample_points_, optimized_time_interval(0), optimized_time_interval(1));
-
-  q_nominal_optimized = spline_path->eval(time_breaks_optimized, 0);
-  q_dot_nominal_optimized = spline_path->eval(time_breaks_optimized, 1);
-  q_ddot_nominal_optimized = spline_path->eval(time_breaks_optimized, 2);
-
-  std::vector<Eigen::VectorXd> q_nominal_optimized_mat;
-  std::vector<Eigen::VectorXd> q_dot_nominal_optimized_mat;
-  std::vector<double> time_breaks_optimized_vec;
-  for (size_t i = 0; i < (size_t) 5 * sample_points_; i++)
-  {
-    const double t = time_breaks_optimized[i];
-    const toppra::Vector& q_t = q_nominal_optimized[i];
-    const toppra::Vector& q_dot_t = q_dot_nominal_optimized[i];
-    q_nominal_optimized_mat.push_back(q_t);
-    q_dot_nominal_optimized_mat.push_back(q_dot_t);
-    time_breaks_optimized_vec.push_back(t);
-  }
-
-  // Check if computed velocity is correct
-  Point3D pos = start;
-  for (size_t i = 1; i < q_dot_nominal_optimized_mat.size(); i++)
-  {
-    pos += q_dot_nominal_optimized_mat[i] * (time_breaks_optimized[i] - time_breaks_optimized[i-1]);
-  }
-  std::cout << "Final position: " << pos.transpose() << std::endl;
-  std::cout << "Error: " << goal.transpose() - pos.transpose() << std::endl;
-
-  // // print q_nominal_optimized_mat
-  // for (size_t i = 0; i < q_dot_nominal_optimized_mat.size(); i++)
+  // publish marker array with obstacles
+  // clear marker_array
+  // marker_array.markers.clear();
+  // for (size_t i = 0; i < grid3D.size(); i++)
   // {
-  //   std::cout << "q_dot_nominal_optimized_mat[" << i << "] = " << q_dot_nominal_optimized_mat[i].transpose() << std::endl;
+  //   for (size_t j = 0; j < (size_t) grid3D[i].rows(); j++)
+  //   {
+  //     for (size_t k = 0; k < (size_t) grid3D[i].cols(); k++)
+  //     {
+  //       if (grid3D[i](j, k))
+  //       {
+  //         visualization_msgs::msg::Marker marker;
+  //         marker.header.frame_id = "map";
+  //         marker.header.stamp = this->now();
+  //         marker.ns = "obstacles";
+  //         marker.id = i * grid3D[i].rows() * grid3D[i].cols() + j * grid3D[i].cols() + k;
+  //         marker.type = visualization_msgs::msg::Marker::CUBE;
+  //         marker.action = visualization_msgs::msg::Marker::ADD;
+  //         marker.pose.position.x = k * grid_resolution_;
+  //         marker.pose.position.y = j * grid_resolution_;
+  //         marker.pose.position.z = i * grid_resolution_;
+  //         marker.pose.orientation.x = 0.0;
+  //         marker.pose.orientation.y = 0.0;
+  //         marker.pose.orientation.z = 0.0;
+  //         marker.pose.orientation.w = 1.0;
+  //         marker.scale.x = grid_resolution_;
+  //         marker.scale.y = grid_resolution_;
+  //         marker.scale.z = grid_resolution_;
+  //         marker.color.a = 1.0;
+  //         marker.color.r = 0.0;
+  //         marker.color.g = 0.0;
+  //         marker.color.b = 1.0;
+  //         marker_array.markers.push_back(marker);
+  //       }
+  //     }
+  //   }
   // }
+  // marker_pub_->publish(marker_array);
 
-
-
-
-
-
-  // Sample spline
-  pv = spline.eval(times, 0);
-  dpv = spline.eval(times, 1);
-  ddpv = spline.eval(times, 2);
-
-  // Compute spline length
-  length = spline_length(pv, sample_points_);
-
-  // Compute spline curvature
-  std::vector<double> curvature;
-  spline_curvature(dpv, ddpv, sample_points_, curvature);
-
-  // Find Voronoi regions
-  // simple_cycles(vor_result);
-
-  auto end_time = std::chrono::high_resolution_clock::now();
-
-  /////////////////////////////////////////
-
-  auto duration_contours_voronoi = std::chrono::duration_cast<std::chrono::milliseconds>(contours_voronoi_end_time - start_time).count();
-  auto duration_astar = std::chrono::duration_cast<std::chrono::milliseconds>(astar_end_time - contours_voronoi_end_time).count();
-  auto duration_spline = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - astar_end_time).count();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-  RCLCPP_WARN(this->get_logger(), "Contours + V3D time: %ld ms", duration_contours_voronoi);
-  RCLCPP_WARN(this->get_logger(), "A* time: %ld ms", duration_astar);
-  RCLCPP_WARN(this->get_logger(), "Spline time: %ld ms", duration_spline);
-  RCLCPP_WARN(this->get_logger(), "Total time: %ld ms", duration);
-
-  // Plot
-  if (plot_voronoi_)
-  {
-    if (results.altitudes.size() > 1) this->plot_voronoi_3d();
-    else plot_voronoi_2d(0);
-  }
-
-  // layers_thresholdow std::invalid_argument("Manually stopped after generate_plot()");
-
-  // Save data on file
-  if (save_log_) this->save_log();
+  ///////////////////////////////////////////////////////////
 
   RCLCPP_INFO(this->get_logger(), "Node initialized");
 }
@@ -465,6 +302,16 @@ void VoronoiPlannerNode::init_atomics()
 }
 
 /**
+ * @brief Routine to initialize callback groups.
+ */
+void VoronoiPlannerNode::init_cgroups()
+{
+  // Actions
+  actions_cgroup_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
+}
+
+/**
  * @brief Routine to initialize topic publishers.
  */
 void VoronoiPlannerNode::init_publishers()
@@ -473,6 +320,16 @@ void VoronoiPlannerNode::init_publishers()
   marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
     "/test/obstacles",
     rclcpp::QoS(1));
+}
+
+/**
+ * @brief Routine to initialize static variables.
+ */
+void VoronoiPlannerNode::init_static_vars()
+{
+  Line::point_distance = point_distance_;
+  Triangle::distance_tresh = distance_tresh_;
+  GeneralizedVoronoi::rdp_epsilon = rdp_epsilon_voronoi_;
 }
 
 /**
@@ -487,22 +344,48 @@ void VoronoiPlannerNode::init_timers()
         this));
 }
 
+/**
+ * @brief Routine to initialize actions.
+ */
+void VoronoiPlannerNode::init_actions()
+{
+  // Initialize action servers
+  // Voronoi Planner
+  find_path_server_ = rclcpp_action::create_server<FindPath>(
+    this,
+    "~/voro_planner",
+    std::bind(
+      &VoronoiPlannerNode::find_path_handle_goal,
+      this,
+      std::placeholders::_1,
+      std::placeholders::_2),
+    std::bind(
+      &VoronoiPlannerNode::find_path_handle_cancel,
+      this,
+      std::placeholders::_1),
+    std::bind(
+      &VoronoiPlannerNode::find_path_handle_accepted,
+      this,
+      std::placeholders::_1),
+    DUAQoS::get_action_server_options(),
+    actions_cgroup_);
+}
 
 /**
  * @brief Routine to initialize topic publishers.
  */
 void VoronoiPlannerNode::init_toppra()
 {
-  velLimitLower = -max_vel_ * toppra::Vector::Ones(3);
-  velLimitUpper =  max_vel_ * toppra::Vector::Ones(3);
-  accLimitLower = -max_acc_ * toppra::Vector::Ones(3);
-  accLimitUpper =  max_acc_ * toppra::Vector::Ones(3);
+  toppra::Vector vel_limit_lower = -max_vel_ * toppra::Vector::Ones(3);
+  toppra::Vector vel_limit_upper =  max_vel_ * toppra::Vector::Ones(3);
+  toppra::Vector acc_limit_lower = -max_acc_ * toppra::Vector::Ones(3);
+  toppra::Vector acc_limit_upper =  max_acc_ * toppra::Vector::Ones(3);
 
   toppra::LinearConstraintPtr ljv, lja;
-  ljv = std::make_shared<toppra::constraint::LinearJointVelocity>(velLimitLower, velLimitUpper);
-  lja = std::make_shared<toppra::constraint::LinearJointAcceleration>(accLimitLower, accLimitUpper);
+  ljv = std::make_shared<toppra::constraint::LinearJointVelocity>(vel_limit_lower, vel_limit_upper);
+  lja = std::make_shared<toppra::constraint::LinearJointAcceleration>(acc_limit_lower, acc_limit_upper);
 
-  constrains = toppra::LinearConstraintPtrs{ljv, lja};
+  constraints = toppra::LinearConstraintPtrs{ljv, lja};
 }
 
 } // namespace VoronoiPlanner

@@ -49,21 +49,25 @@
 #include <unistd.h>
 
 #include <dua_node/dua_node.hpp>
+#include <dua_qos/dua_qos.hpp>
+#include <playground_interfaces/action/find_path.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include <opencv2/opencv.hpp>
 
-#include "libqhullcpp/RboxPoints.h"
-#include "libqhullcpp/QhullError.h"
-#include "libqhullcpp/QhullQh.h"
-#include "libqhullcpp/QhullFacet.h"
-#include "libqhullcpp/QhullFacetList.h"
-#include "libqhullcpp/QhullLinkedList.h"
-#include "libqhullcpp/QhullVertex.h"
-#include "libqhullcpp/Qhull.h"
+#include <libqhullcpp/RboxPoints.h>
+#include <libqhullcpp/QhullError.h>
+#include <libqhullcpp/QhullQh.h>
+#include <libqhullcpp/QhullFacet.h>
+#include <libqhullcpp/QhullFacetList.h>
+#include <libqhullcpp/QhullLinkedList.h>
+#include <libqhullcpp/QhullVertex.h>
+#include <libqhullcpp/Qhull.h>
 
-#include "libqhull_r/libqhull_r.h"
+#include <libqhull_r/libqhull_r.h>
 
 #include <toppra/algorithm.hpp>
 #include <toppra/algorithm/toppra.hpp>
@@ -78,7 +82,7 @@
 #include <toppra/toppra.hpp>
 #include <toppra/geometric_path/piecewise_poly_path.hpp>
 
-#include "matplotlibcpp.h"
+#include <matplotlibcpp.h>
 
 #include <random>
 
@@ -95,8 +99,14 @@ using orgQhull::RboxPoints;
 using orgQhull::QhullVertex;
 using orgQhull::QhullVertexSet;
 
+using namespace dua_interfaces::msg;
+using namespace playground_interfaces::action;
 using namespace std::chrono_literals;
 using namespace rcl_interfaces::msg;
+
+using FindPathGoalHandle = rclcpp_action::ServerGoalHandle<FindPath>;
+using FindPathGoalSharedPtr = std::shared_ptr<const FindPath::Goal>;
+using FindPathGoalHandleSharedPtr = std::shared_ptr<FindPathGoalHandle>;
 
 namespace plt = matplotlibcpp;
 
@@ -421,10 +431,38 @@ private:
   /* Callbacks */
   void visualization_timer_clbk();
 
+  /* Actions callback group. */
+  rclcpp::CallbackGroup::SharedPtr actions_cgroup_;
+
+  /* Action servers. */
+  rclcpp_action::Server<FindPath>::SharedPtr find_path_server_;
+
+  /* Actions goal request handlers. */
+  rclcpp_action::GoalResponse find_path_handle_goal(
+    const rclcpp_action::GoalUUID & uuid,
+    FindPathGoalSharedPtr goal);
+
+  /* Actions cancellation request handlers. */
+  rclcpp_action::CancelResponse find_path_handle_cancel(
+    const FindPathGoalHandleSharedPtr goal_handle);
+
+  /* Actions goal acceptance handlers. */
+  void find_path_handle_accepted(const FindPathGoalHandleSharedPtr goal_handle);
+
+  /* Actions results. */
+  void find_path_succeeded(FindPathGoalHandleSharedPtr find_path_goal_handle);
+  void find_path_failed(FindPathGoalHandleSharedPtr find_path_goal_handle, std::string error_msg);
+  void find_path_error(FindPathGoalHandleSharedPtr find_path_goal_handle, std::string error_msg);
+  void find_path_canceled(FindPathGoalHandleSharedPtr find_path_goal_handle);
+
+  /* Actions routines. */
+  void compute_path(const FindPathGoalHandleSharedPtr goal_handle);
+
   /* Utility routines */
   void plot_voronoi_2d(int layer);
   void plot_voronoi_3d();
   void save_log();
+  void save_yaml();
   void polys_from_grid(OccupancyGrid2D grid, Polygons &polygons);
   double spline_length(toppra::Vectors s, int64_t sample_points);
   void spline_curvature(toppra::Vectors ds,
@@ -463,9 +501,12 @@ private:
   std::atomic<bool> stop_thread;
 
   /* Node init functions */
+  void init_actions();
   void init_atomics();
+  void init_cgroups();
   void init_parameters();
   void init_publishers();
+  void init_static_vars();
   void init_timers();
   void init_toppra();
 
@@ -485,17 +526,17 @@ private:
   Point3D goal;
   Astar astar;
 
-  toppra::Vector velLimitLower;
-  toppra::Vector velLimitUpper;
-  toppra::Vector accLimitLower;
-  toppra::Vector accLimitUpper;
-  toppra::LinearConstraintPtrs constrains;
+  toppra::LinearConstraintPtrs constraints;
   toppra::ParametrizationData pd;
   std::shared_ptr<toppra::parametrizer::ConstAccel> spline_path;
   toppra::Vector time_breaks_optimized;
   toppra::Vectors q_nominal_optimized;
   toppra::Vectors q_dot_nominal_optimized;
   toppra::Vectors q_ddot_nominal_optimized;
+
+  std::vector<Eigen::VectorXd> q_nominal_optimized_mat;
+  std::vector<Eigen::VectorXd> q_dot_nominal_optimized_mat;
+  std::vector<double> time_breaks_optimized_vec;
 
   OccupancyGrid3D grid3D;
 };
