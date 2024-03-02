@@ -23,66 +23,111 @@
 /// @author Mattia Montanari
 /// @date July 2022
 
-#include "openGJK/openGJK.hpp"
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "openGJK/openGJK.h"
+
+#define fscanf_s fscanf
+
+/// @brief Function for reading input file with body's coordinates.
+int readinput(const char *inputfile, double ***pts, int *out) {
+  int npoints = 0;
+  int idx = 0;
+  FILE *fp;
+
+  /* Open file. */
+#ifdef WIN32
+  errno_t err;
+  if ((err = fopen_s(&fp, inputfile, "r")) != 0) {
+#else
+  if ((fp = fopen(inputfile, "r")) == NULL) {
+#endif
+    fprintf(stdout, "ERROR: input file %s not found!\n", inputfile);
+    fprintf(stdout, "  -> The file must be in the folder from which this "
+                    "program is launched\n\n");
+    return 1;
+  }
+
+  /* Read number of input vertices. */
+  if (fscanf_s(fp, "%d", &npoints) != 1)
+    return 1;
+
+  /* Allocate memory. */
+  double **arr = (double **)malloc(npoints * sizeof(double *));
+  for (int i = 0; i < npoints; i++)
+    arr[i] = (double *)malloc(3 * sizeof(double));
+
+  /* Read and store vertices' coordinates. */
+  for (idx = 0; idx < npoints; idx++) {
+    if (fscanf_s(fp, "%lf %lf %lf\n", &arr[idx][0], &arr[idx][1], &arr[idx][2]) !=
+        3)
+      return 1;
+  }
+
+  fclose(fp);
+
+  *pts = arr;
+  *out = idx;
+
+  return (0);
+}
 
 /**
  * @brief Main program of example1_c (described in Section 3.1 of the paper).
  *
  */
-int main()
-{
+int main() {
   /* Squared distance computed by openGJK.                                 */
-  double dd = 0;
-  /* Structure of simplex used by openGJK.                                 */
-  gkSimplex s;
+  double dd;
+  /* Number of vertices defining body 1 and body 2, respectively.          */
+  int nvrtx1, nvrtx2;
   /* Structures of body 1 and body 2, respectively.                        */
   gkPolytope bd1;
   gkPolytope bd2;
+  /* Specify name of input files for body 1 and body 2, respectively.      */
+  char inputfileA[40] = "userP.dat", inputfileB[40] = "userQ.dat";
+  /* Pointers to vertices' coordinates of body 1 and body 2, respectively. */
+  double(**vrtx1) = NULL, (**vrtx2) = NULL;
 
   /* For importing openGJK this is Step 2: adapt the data structure for the
    * two bodies that will be passed to the GJK procedure. */
 
-  /* Coordinates of object 1. */
-  std::vector<Eigen::Vector3d> vrtx1 =
-  {
-    Eigen::Vector3d(0.0, 5.5, 0.0),
-    Eigen::Vector3d(2.3, 1.0, -2.0),
-    Eigen::Vector3d(8.1, 4.0, 2.4),
-    Eigen::Vector3d(4.3, 5.0, 2.2),
-    Eigen::Vector3d(2.5, 1.0, 2.3),
-    Eigen::Vector3d(7.1, 1.0, 2.4),
-    Eigen::Vector3d(1.0, 1.5, 0.3),
-    Eigen::Vector3d(3.3, 0.5, 0.3),
-    Eigen::Vector3d(6.0, 1.4, 0.2)
-  }; 
+  /* Import coordinates of object 1. */
+  if (readinput(inputfileA, &vrtx1, &nvrtx1))
+    return (1);
   bd1.coord = vrtx1;
-  bd1.numpoints = vrtx1.size();
+  bd1.numpoints = nvrtx1;
 
-  /* Coordinates of object 1. */
-  std::vector<Eigen::Vector3d> vrtx2 =
-  {
-    Eigen::Vector3d(0.0, -5.5, 0.0),
-    Eigen::Vector3d(-2.3, -1.0, 2.0),
-    Eigen::Vector3d(-8.1, -4.0, -2.4),
-    Eigen::Vector3d(-4.3, -5.0, -2.2),
-    Eigen::Vector3d(-2.5, -1.0, -2.3),
-    Eigen::Vector3d(-7.1, -1.0, -2.4),
-    Eigen::Vector3d(-1.0, -1.5, -0.3),
-    Eigen::Vector3d(-3.3, -0.5, -0.3),
-    Eigen::Vector3d(-6.0, -1.4, -0.2)
-  };
+  /* Import coordinates of object 2. */
+  if (readinput(inputfileB, &vrtx2, &nvrtx2))
+    return (1);
   bd2.coord = vrtx2;
-  bd2.numpoints = vrtx2.size();
-
-  /* Initialise simplex as empty */
-  s.nvrtx = 0;
+  bd2.numpoints = nvrtx2;
 
   /* For importing openGJK this is Step 3: invoke the GJK procedure. */
   /* Compute squared distance using GJK algorithm. */
-  dd = compute_minimum_distance(bd1, bd2, s);
+  int i;
+  for (i = 0; i < 100000; i++)
+  {
+    /* Structure of simplex used by openGJK.                                 */
+    gkSimplex s;
+    /* Initialise simplex as empty */
+    s.nvrtx = 0;
+    dd = compute_minimum_distance(bd1, bd2, &s);
+  }
+  printf("%d\n", i);
 
   /* Print distance between objects. */
   printf("Distance between bodies %f\n", dd);
 
-  return 0;
+  /* Free memory */
+  for (int i = 0; i < bd1.numpoints; i++)
+    free(bd1.coord[i]);
+  free(bd1.coord);
+  for (int i = 0; i < bd2.numpoints; i++)
+    free(bd2.coord[i]);
+  free(bd2.coord);
+
+  return (0);
 }

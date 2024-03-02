@@ -21,11 +21,11 @@
 #  FOR A PARTICULAR PURPOSE. See GNU General Public License for details.           #
 
 project(example_lib_opengjk_ce 
-    LANGUAGES CXX
+    LANGUAGES C
     VERSION 1.0.0 
 )
 
-add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/main.c)
 target_link_libraries(${PROJECT_NAME} lib_opengjk_ce)
 
 # Copy input files for this example after build
