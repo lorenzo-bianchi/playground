@@ -667,7 +667,7 @@ void compute_minimum_distance(gkPolytope bd1, gkPolytope bd2, gkSimplex *s, gkFl
         " * * * * * * * * * * * * * * \n");
   }
 
-  return sqrt(norm2(v));
+  //return sqrt(norm2(v));
 }
 
 #ifdef MATLAB_MEX_BUILD
