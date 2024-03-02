@@ -82,6 +82,8 @@
 #include <toppra/toppra.hpp>
 #include <toppra/geometric_path/piecewise_poly_path.hpp>
 
+#include <openGJK/openGJK.h>
+
 #include <matplotlibcpp.h>
 
 #include <random>
@@ -115,6 +117,8 @@ typedef std::vector<Chain> Chains;
 typedef Eigen::Vector2i ChainIdx;
 typedef std::deque<ChainIdx> ChainStart;
 typedef Eigen::Vector3d Point3D;
+typedef std::vector<Point3D> Polygon3D;
+typedef std::vector<Polygon3D> Polygons3D;
 typedef Eigen::Vector2d Point;
 typedef std::vector<Point> Polygon;
 typedef std::vector<Polygon> Polygons;
@@ -459,6 +463,13 @@ private:
   void compute_path(const FindPathGoalHandleSharedPtr goal_handle);
 
   /* Utility routines */
+  void compute_astar();
+  void compute_spline();
+  void compute_voronoi_graph();
+  void compute_velocities();
+  void gjk(Eigen::Vector3d robot_pos,
+           Polygons3D polys,
+           std::vector<Eigen::Vector3d>& min_distances);
   void plot_voronoi_2d(int layer);
   void plot_voronoi_3d();
   void save_log();
@@ -526,6 +537,7 @@ private:
   Point3D goal;
   Astar astar;
 
+  std::shared_ptr<toppra::PiecewisePolyPath> spline_ptr;
   toppra::LinearConstraintPtrs constraints;
   toppra::ParametrizationData pd;
   std::shared_ptr<toppra::parametrizer::ConstAccel> spline_path;

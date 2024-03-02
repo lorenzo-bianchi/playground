@@ -29,24 +29,69 @@
 namespace VoronoiPlanner
 {
 /*  */
-void VoronoiPlannerNode::compute_path(const FindPathGoalHandleSharedPtr goal_handle)
+void VoronoiPlannerNode::gjk(Eigen::Vector3d robot_pos, Polygons3D polys, std::vector<Eigen::Vector3d>& min_distances)
 {
-  start = {robot_start_[0], robot_start_[1], robot_start_[2]};  // TODO: TF
-  goal = {goal_handle->get_goal()->target.x,
-          goal_handle->get_goal()->target.y,
-          goal_handle->get_goal()->target.z};
-  // goal = {robot_goal_[0], robot_goal_[1], robot_goal_[2]};
+  // robot
+  const int n_points_robot = 1;
+  const int cols = 3;
 
-  results = Result();
+  double** robot = new double*[n_points_robot];
+  for (int i = 0; i < n_points_robot; i++) robot[i] = new double[cols];
 
-  //
+  // fill vector
+  robot[0][0] = robot_pos[0], robot[0][1] = robot_pos[1], robot[0][2] = robot_pos[2];
+
+  gkPolytope bd_robot;
+  bd_robot.coord = robot;
+  bd_robot.numpoints = n_points_robot;
+
+  // obstacles
+  for (Polygon3D poly : polys)
+  {
+    int rows = poly.size();
+
+    // allocate memory
+    double** obstacle = new double*[rows];
+    for (int i = 0; i < rows; i++) obstacle[i] = new double[cols];
+
+    // fill vector
+    for (int i = 0; i < rows; i++)
+      for (int j = 0; j < cols; j++)
+        obstacle[i][j] = poly[i][j];
+
+    gkPolytope bd_obstacle;
+    bd_obstacle.coord = obstacle;
+    bd_obstacle.numpoints = rows;
+
+    // compute minimum distance
+    gkSimplex s;
+    s.nvrtx = 0;
+    double v[3] = {};
+    compute_minimum_distance(bd_obstacle, bd_robot, &s, v);
+
+    Eigen::Vector3d min_distance(v[0], v[1], v[2]);
+    min_distances.push_back(min_distance);
+
+    // free memory
+    for (int i = 0; i < rows; i++)
+      delete[] obstacle[i];
+    delete[] obstacle;
+  }
+
+  // free memory
+  for (int i = 0; i < n_points_robot; i++)
+    delete[] robot[i];
+  delete[] robot;
+}
+
+/*  */
+void VoronoiPlannerNode::compute_voronoi_graph()
+{
   Line b1 = Line({{           0.0,            0.0}, {field_size_[0],            0.0}});
   Line b2 = Line({{field_size_[0],            0.0}, {field_size_[0], field_size_[1]}});
   Line b3 = Line({{field_size_[0], field_size_[1]}, {           0.0, field_size_[1]}});
   Line b4 = Line({{           0.0,            0.0}, {           0.0, field_size_[1]}});
   std::vector<Line> boundaries = {b1, b2, b3, b4};
-
-  auto start_time = std::chrono::high_resolution_clock::now();
 
   // Code to be timed
   results.r_lengths.push_back(0);
@@ -111,23 +156,15 @@ void VoronoiPlannerNode::compute_path(const FindPathGoalHandleSharedPtr goal_han
   }
 
   this->save_yaml();
+}
 
-  //////////////////////////////////////////
-
-  auto contours_voronoi_end_time = std::chrono::high_resolution_clock::now();
-
+/*  */
+void VoronoiPlannerNode::compute_astar()
+{
   // Run A* algorithm
   astar = Astar(results, start, goal);
   path.clear();
-  try
-  {
-    path = astar.run();
-  }
-  catch (const std::exception& e)
-  {
-    find_path_failed(goal_handle, e.what());
-    return;
-  }
+  path = astar.run();
 
   // Filter out points too close using rdpa and distances
   std::vector<Point3D> path_temp = path;
@@ -147,8 +184,6 @@ void VoronoiPlannerNode::compute_path(const FindPathGoalHandleSharedPtr goal_han
     std::cout << "path[" << i << "] = " << path[i].transpose() << std::endl;
   }
 
-  auto astar_end_time = std::chrono::high_resolution_clock::now();
-
   // Move points
   path_orig.clear();
   path_orig = path;
@@ -167,8 +202,11 @@ void VoronoiPlannerNode::compute_path(const FindPathGoalHandleSharedPtr goal_han
 
     path[i] = b + move_coefficient_ * norm_angle * bis;
   }
+}
 
-  // Run topp-ra
+/*  */
+void VoronoiPlannerNode::compute_spline()
+{
   toppra::Vectors positions;
   for (auto& vi : path)
   {
@@ -186,13 +224,29 @@ void VoronoiPlannerNode::compute_path(const FindPathGoalHandleSharedPtr goal_han
   //toppra::BoundaryCond bc = toppra::BoundaryCond("natural");  // "notaknot", "clamped", "natural", "manual
   toppra::BoundaryCondFull bc_type{bc_start, bc_end};
 
-  toppra::PiecewisePolyPath spline = toppra::PiecewisePolyPath::CubicSpline(positions, times, bc_type);
-  std::shared_ptr<toppra::PiecewisePolyPath> spline_ptr = std::make_shared<toppra::PiecewisePolyPath>(spline);
+  spline_ptr = std::make_shared<toppra::PiecewisePolyPath>(
+    toppra::PiecewisePolyPath::CubicSpline(positions, times, bc_type));
 
+  // increase number of times
   times.resize(sample_points_);
   for (int i = 0; i < sample_points_; i++)
     times[i] = i / double(sample_points_-1);
 
+  // Sample spline
+  pv = spline_ptr->eval(times, 0);
+  dpv = spline_ptr->eval(times, 1);
+  ddpv = spline_ptr->eval(times, 2);
+
+  // Compute spline length
+  length = spline_length(pv, sample_points_);
+
+  // Compute spline curvature
+  spline_curvature(dpv, ddpv, sample_points_, curvature);
+}
+
+/*  */
+void VoronoiPlannerNode::compute_velocities()
+{
   // Compute velocity profile
   toppra::algorithm::TOPPRA problem{constraints, spline_ptr};
   problem.computePathParametrization(0, 0);
@@ -236,18 +290,59 @@ void VoronoiPlannerNode::compute_path(const FindPathGoalHandleSharedPtr goal_han
   // {
   //   std::cout << "q_dot_nominal_optimized_mat[" << i << "] = " << q_dot_nominal_optimized_mat[i].transpose() << std::endl;
   // }
+}
 
-  // Sample spline
-  pv = spline.eval(times, 0);
-  dpv = spline.eval(times, 1);
-  ddpv = spline.eval(times, 2);
+/*  */
+void VoronoiPlannerNode::compute_path(const FindPathGoalHandleSharedPtr goal_handle)
+{
+  start = {robot_start_[0], robot_start_[1], robot_start_[2]};  // TODO: TF
+  goal = {goal_handle->get_goal()->target.x,
+          goal_handle->get_goal()->target.y,
+          goal_handle->get_goal()->target.z};
+  // goal = {robot_goal_[0], robot_goal_[1], robot_goal_[2]};
 
-  // Compute spline length
-  length = spline_length(pv, sample_points_);
+  results = Result();
 
-  // Compute spline curvature
-  std::vector<double> curvature;
-  spline_curvature(dpv, ddpv, sample_points_, curvature);
+  auto start_time = std::chrono::high_resolution_clock::now();
+
+  compute_voronoi_graph();
+
+  //////////////////////////////////////////
+
+  auto contours_voronoi_end_time = std::chrono::high_resolution_clock::now();
+
+  try
+  {
+    compute_astar();
+  }
+  catch (const std::exception& e)
+  {
+    find_path_failed(goal_handle, e.what());
+    return;
+  }
+
+  auto astar_end_time = std::chrono::high_resolution_clock::now();
+
+  compute_spline();
+
+  auto spline_end_time = std::chrono::high_resolution_clock::now();
+
+  compute_velocities();
+
+  // // test gjk function
+  // Eigen::Vector3d robot_pos = {0.0, 0.0, 0.0};
+  // Polygons3D polys = {
+  //                      {{4.0, 4.0, 0.0}, {5.0, 4.0, 0.0}, {5.0, 5.0, 0.0}, {4.0, 5.0, 0.0}},
+  //                      {{-4.0, 2.0, 0.0}, {-2.0, 4.0, 0.0}, {-3.0, 3.0, 0.0}},
+  //                    };
+  // std::vector<Eigen::Vector3d> min_distances;
+  // gjk(robot_pos, polys, min_distances);
+
+  // for (size_t i = 0; i < min_distances.size(); i++)
+  // {
+  //   std::cout << "Min distance " << i << ": " << min_distances[i].transpose() << std::endl;
+  //   std::cout << "Norm: " << min_distances[i].norm() << std::endl;
+  // }
 
   // Find Voronoi regions
   // simple_cycles(vor_result);
@@ -258,11 +353,13 @@ void VoronoiPlannerNode::compute_path(const FindPathGoalHandleSharedPtr goal_han
 
   auto duration_contours_voronoi = std::chrono::duration_cast<std::chrono::milliseconds>(contours_voronoi_end_time - start_time).count();
   auto duration_astar = std::chrono::duration_cast<std::chrono::milliseconds>(astar_end_time - contours_voronoi_end_time).count();
-  auto duration_spline = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - astar_end_time).count();
+  auto duration_spline = std::chrono::duration_cast<std::chrono::milliseconds>(spline_end_time - astar_end_time).count();
+  auto duration_velocity = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - spline_end_time).count();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
   RCLCPP_WARN(this->get_logger(), "Contours + V3D time: %ld ms", duration_contours_voronoi);
   RCLCPP_WARN(this->get_logger(), "A* time: %ld ms", duration_astar);
   RCLCPP_WARN(this->get_logger(), "Spline time: %ld ms", duration_spline);
+  RCLCPP_WARN(this->get_logger(), "Velocity time: %ld ms", duration_velocity);
   RCLCPP_WARN(this->get_logger(), "Total time: %ld ms", duration);
 
   // Plot

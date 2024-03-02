@@ -55,6 +55,7 @@ target_include_directories(voronoi_planner PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_link_libraries(voronoi_planner
   Eigen3::Eigen
+  lib_opengjk_ce
   ${OpenCV_LIBS}
   qhullcpp
   qhull_r
