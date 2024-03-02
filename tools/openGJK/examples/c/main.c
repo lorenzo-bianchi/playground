@@ -26,9 +26,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <math.h>
+
 #include "openGJK/openGJK.h"
 
 #define fscanf_s fscanf
+#define norm2(a) (a[0] * a[0] + a[1] * a[1] + a[2] * a[2])
 
 /// @brief Function for reading input file with body's coordinates.
 int readinput(const char *inputfile, double ***pts, int *out) {
@@ -108,17 +111,19 @@ int main() {
   /* For importing openGJK this is Step 3: invoke the GJK procedure. */
   /* Compute squared distance using GJK algorithm. */
   int i;
+  gkFloat v[3];
   for (i = 0; i < 100000; i++)
   {
     /* Structure of simplex used by openGJK.                                 */
     gkSimplex s;
     /* Initialise simplex as empty */
     s.nvrtx = 0;
-    dd = compute_minimum_distance(bd1, bd2, &s);
+    compute_minimum_distance(bd1, bd2, &s, v);
   }
   printf("%d\n", i);
 
   /* Print distance between objects. */
+  dd = sqrt(norm2(v));
   printf("Distance between bodies %f\n", dd);
 
   /* Free memory */

@@ -585,14 +585,13 @@ inline static void subalgorithm(gkSimplex *s, gkFloat *v) {
   }
 }
 
-gkFloat compute_minimum_distance(gkPolytope bd1, gkPolytope bd2, gkSimplex *s) {
+void compute_minimum_distance(gkPolytope bd1, gkPolytope bd2, gkSimplex *s, gkFloat v[3]) {
   int k = 0;                   /**< Iteration counter            */
   int i;                       /**< General purpose counter      */
   int mk = 25;                 /**< Maximum number of iterations of the GJK algorithm */
   int absTestin;
   gkFloat norm2Wmax = 0;
   gkFloat tesnorm;
-  gkFloat v[3];                /**< Search direction             */
   gkFloat vminus[3];           /**< Search direction * -1        */
   gkFloat w[3];                /**< Vertex on CSO boundary given by the difference of support
                                  functions on both bodies */

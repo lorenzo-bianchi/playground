@@ -46,7 +46,7 @@ typedef struct gkSimplex_ {
 } gkSimplex;
 
 /// @brief Uses the GJK algorithm to compute the minimum distance between two bodies
-gkFloat compute_minimum_distance(const gkPolytope p_, const gkPolytope q_, gkSimplex *s_);
+void compute_minimum_distance(const gkPolytope p_, const gkPolytope q_, gkSimplex *s_, gkFloat v[3]);
 
 #ifdef __cplusplus
 }
