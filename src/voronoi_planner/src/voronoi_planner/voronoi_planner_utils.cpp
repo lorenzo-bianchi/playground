@@ -238,10 +238,10 @@ void VoronoiPlannerNode::compute_spline()
   ddpv = spline_ptr->eval(times, 2);
 
   // Compute spline length
-  length = spline_length(pv, sample_points_);
+  length = spline_length(pv);
 
   // Compute spline curvature
-  spline_curvature(dpv, ddpv, sample_points_, curvature);
+  spline_curvature(dpv, ddpv, curvature);
 }
 
 /*  */
@@ -468,10 +468,10 @@ void VoronoiPlannerNode::visualization_timer_clbk()
 }
 
 /*  */
-double VoronoiPlannerNode::spline_length(toppra::Vectors s, int64_t sample_points)
+double VoronoiPlannerNode::spline_length(toppra::Vectors s)
 {
   double length = 0.0;
-  for (int i = 0; i < sample_points-1; ++i)
+  for (size_t i = 0; i < s.size()-1; ++i)
   {
     Eigen::Vector3d p1 = s[i];
     Eigen::Vector3d p2 = s[i+1];
@@ -484,12 +484,11 @@ double VoronoiPlannerNode::spline_length(toppra::Vectors s, int64_t sample_point
 /*  */
 void VoronoiPlannerNode::spline_curvature(toppra::Vectors ds,
                                           toppra::Vectors dds,
-                                          int64_t sample_points,
                                           std::vector<double> &curvature)
 {
-  curvature.resize(sample_points);
+  curvature.resize(ds.size());
   double num, den;
-  for (int i = 0; i < sample_points; ++i)
+  for (size_t i = 0; i < ds.size(); ++i)
   {
     Eigen::Vector3d dp = ds[i];
     Eigen::Vector3d ddp = dds[i];

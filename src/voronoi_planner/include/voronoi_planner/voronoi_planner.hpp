@@ -475,10 +475,9 @@ private:
   void save_log();
   void save_yaml();
   void polys_from_grid(OccupancyGrid2D grid, Polygons &polygons);
-  double spline_length(toppra::Vectors s, int64_t sample_points);
+  double spline_length(toppra::Vectors s);
   void spline_curvature(toppra::Vectors ds,
                         toppra::Vectors dds,
-                        int64_t sample_points,
                         std::vector<double> &curvature);
   void simple_cycles(Result vor_result);
 
