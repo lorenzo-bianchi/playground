@@ -165,9 +165,9 @@ public:
   Triangle(std::vector<Point> inputPoints);
   std::vector<Point> generate_line();
   bool is_in_polygon(Point& point);
-  void set_distance_tresh(double distance) { distance_tresh = distance; }
+  void set_distance_tresh(double distance) { distance_thresh = distance; }
 
-  static double distance_tresh;
+  static double distance_thresh;
 
 private:
   bool test_distance_tresh(std::vector<Point>& points, Point& test_point, double distance_trash);
@@ -482,7 +482,9 @@ private:
   void simple_cycles(Result vor_result);
 
   /* Node parameters */
-  double distance_tresh_;
+  double distance_thresh_;
+  int64_t distance_thresh_max_fails_;
+  double distance_thresh_scale_factor_;
   std::vector<double> field_size_;
   double grid_resolution_;
   int64_t layers_above_;

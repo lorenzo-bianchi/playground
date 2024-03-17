@@ -30,7 +30,7 @@ namespace VoronoiPlanner
 {
 
 double Line::point_distance = 0.0;
-double Triangle::distance_tresh = 0.0;
+double Triangle::distance_thresh = 0.0;
 float GeneralizedVoronoi::rdp_epsilon = 0.0;
 
 /**
@@ -328,7 +328,7 @@ void VoronoiPlannerNode::init_publishers()
 void VoronoiPlannerNode::init_static_vars()
 {
   Line::point_distance = point_distance_;
-  Triangle::distance_tresh = distance_tresh_;
+  Triangle::distance_thresh = distance_thresh_;
   GeneralizedVoronoi::rdp_epsilon = rdp_epsilon_voronoi_;
 }
 

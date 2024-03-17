@@ -3,7 +3,7 @@ namespace: VoronoiPlanner
 node_class_name: VoronoiPlannerNode
 
 params:
-  distance_tresh:
+  distance_thresh:
     type: double
     default_value: 0.0
     min_value: 0.0
@@ -12,7 +12,29 @@ params:
     description: "Distance threshold in class Triangle."
     constraints: "Can be changed."
     read_only: false
-    var_name: distance_tresh_
+    var_name: distance_thresh_
+
+  distance_thresh_max_fails:
+    type: integer
+    default_value: 1
+    min_value: 1
+    max_value: 100
+    step: 1
+    description: "Max number of attempts."
+    constraints: "Can be changed."
+    read_only: false
+    var_name: distance_thresh_max_fails_
+
+  distance_thresh_scale_factor:
+    type: double
+    default_value: 0.0
+    min_value: 0.0
+    max_value: 1.0
+    step: 0.0
+    description: "Scale factor for distance_thresh value."
+    constraints: "Can be changed."
+    read_only: false
+    var_name: distance_thresh_scale_factor_
 
   grid_resolution:
     type: double

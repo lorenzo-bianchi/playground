@@ -1,6 +1,6 @@
 /voronoi_planner:
   ros__parameters:
-    distance_tresh: 0.5
+    distance_thresh: 0.5
     field_size: [20.0, 10.0, 3.0]
     grid_resolution: 0.2
     layers_above: 2

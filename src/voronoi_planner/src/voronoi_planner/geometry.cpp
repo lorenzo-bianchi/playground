@@ -237,7 +237,7 @@ namespace VoronoiPlanner
   bool Triangle::is_in_polygon(Point& point)
   {
     // if point is close enough, filter out
-    if (test_distance_tresh(this->points, point, this->distance_tresh))
+    if (test_distance_tresh(this->points, point, this->distance_thresh))
     {
       return true;
     }
@@ -248,12 +248,12 @@ namespace VoronoiPlanner
   bool Triangle::test_distance_tresh(
     std::vector<Point>& points,
     Point& test_point,
-    double distance_tresh)
+    double distance_thresh)
   {
     for (auto& point : points)
     {
       double dist = (test_point - point).norm();
-      if (dist < distance_tresh) return true;
+      if (dist < distance_thresh) return true;
     }
     return false;
   }

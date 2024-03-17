@@ -130,7 +130,31 @@ void VoronoiPlannerNode::compute_voronoi_graph()
     gen_vor.add_points(points_2d);
 
     // Compute Voronoi graph
-    gen_vor.run(run_type::optimized, plot_voronoi_, layer_idx++ * grid_resolution_, results);
+    // Compute Voronoi graph
+    double distance_thresh_temp = distance_thresh_;
+    int n_failures = 0;
+    while (n_failures < distance_thresh_max_fails_)
+    {
+      try
+      {
+        gen_vor.run(run_type::optimized, plot_voronoi_, layer_idx++ * grid_resolution_, results);
+        break;
+      }
+      catch (const std::exception& e)
+      {
+        save_yaml();
+        n_failures++;
+        distance_thresh_temp = std::max(distance_thresh_scale_factor_ * distance_thresh_temp, grid_resolution_);
+        Triangle::distance_thresh = distance_thresh_temp;
+        RCLCPP_INFO(this->get_logger(), "Voronoi graph computation failed. Retrying with distance_thresh = %f", distance_thresh_temp);
+      }
+    }
+
+    if (n_failures == distance_thresh_max_fails_)
+    {
+      RCLCPP_ERROR(this->get_logger(), "Voronoi graph computation failed. Aborting.");
+      throw std::runtime_error("Voronoi graph computation failed. Aborting.");
+    }
   }
   results.r_lengths.push_back(results.ridges.size());
 
@@ -305,7 +329,16 @@ void VoronoiPlannerNode::compute_path(const FindPathGoalHandleSharedPtr goal_han
 
   auto start_time = std::chrono::high_resolution_clock::now();
 
-  compute_voronoi_graph();
+  try
+  {
+    compute_voronoi_graph();
+  }
+  catch (const std::exception& e)
+  {
+    RCLCPP_INFO(this->get_logger(), "Voronoi failed. Returning empty path.");
+    find_path_failed(goal_handle, e.what());
+    return;
+  }
 
   //////////////////////////////////////////
 
@@ -317,6 +350,7 @@ void VoronoiPlannerNode::compute_path(const FindPathGoalHandleSharedPtr goal_han
   }
   catch (const std::exception& e)
   {
+    RCLCPP_INFO(this->get_logger(), "A* failed. Returning empty path.");
     find_path_failed(goal_handle, e.what());
     return;
   }
