@@ -1,0 +1,197 @@
+/**
+ * Object Detector node definition.
+ *
+ * Lorenzo Bianchi <lnz.bnc@gmail.com>
+ * Roberto Masocco <robmasocco@gmail.com>
+ * Intelligent Systems Lab <isl.torvergata@gmail.com>
+ *
+ * June 4, 2024
+ */
+
+/**
+ * This is free software.
+ * You can redistribute it and/or modify this file under the
+ * terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This file is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this file; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+#ifndef OBJECT_DETECTOR_HPP
+#define OBJECT_DETECTOR_HPP
+
+#include <algorithm>
+#include <atomic>
+#include <iterator>
+#include <stdexcept>
+#include <thread>
+#include <random>
+#include <vector>
+
+#include <semaphore.h>
+
+#include <dua_node/dua_node.hpp>
+#include <dua_qos/dua_qos.hpp>
+#include <dua_interfaces/msg/target.hpp>
+#include <dua_interfaces/msg/target_array.hpp>
+#include <dua_interfaces/msg/target_id.hpp>
+#include <dua_interfaces/msg/visual_targets.hpp>
+
+#include <opencv2/core.hpp>
+#include <opencv2/dnn.hpp>
+#include <opencv2/imgproc.hpp>
+
+#include <rclcpp/rclcpp.hpp>
+
+#include <image_transport/image_transport.hpp>
+#include <image_transport/subscriber.hpp>
+
+#include <geometry_msgs/msg/pose.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/empty.hpp>
+#include <std_srvs/srv/set_bool.hpp>
+
+#include <theora_wrappers/publisher.hpp>
+
+#define UNUSED(arg) (void)(arg)
+#define LINE std::cout << __FUNCTION__ << ", LINE: " << __LINE__ << std::endl;
+
+using namespace dua_interfaces::msg;
+using namespace geometry_msgs::msg;
+using namespace rcl_interfaces::msg;
+using namespace sensor_msgs::msg;
+using namespace std_msgs::msg;
+using namespace std_srvs::srv;
+
+namespace ObjectDetector
+{
+
+struct Detection
+{
+  int class_id{0};
+  std::string className{};
+  float confidence{0.0};
+  cv::Scalar color{};
+  cv::Rect box{};
+};
+
+class Inference
+{
+public:
+  Inference() = default;
+  Inference(std::string &onnxModelPath, cv::Size& modelInputShape, bool runWithCuda, double* scoreThreshold, double* NMSthreshold);
+  std::vector<Detection> runInference(cv::Mat &input);
+
+private:
+  void loadOnnxNetwork();
+  cv::Mat formatToSquare(const cv::Mat &source);
+
+  std::string modelPath;
+  std::string classesPath;
+  bool cudaEnabled;
+
+  std::vector<std::string> classes{"person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
+
+  cv::Size2f modelShape;
+
+  bool letterBoxForSquare = true;
+
+  cv::dnn::Net net;
+
+  double* scoreThreshold;
+  double* NMSthreshold;
+
+  std::mt19937 gen;
+  std::uniform_int_distribution<int> dis;
+};
+
+/**
+ * Object detection node.
+ */
+class ObjectDetectorNode : public DUANode::NodeBase
+{
+public:
+  ObjectDetectorNode(const rclcpp::NodeOptions & node_options = rclcpp::NodeOptions());
+  ~ObjectDetectorNode();
+
+private:
+  /* Node initialization routines */
+  void init_inference();
+  void init_parameters();
+  void init_publishers();
+  void init_services();
+  void init_subscriptions();
+
+  /* image_transport subscriptions */
+  std::shared_ptr<image_transport::CameraSubscriber> camera_sub_;
+
+  /* Topic subscriptions callbacks */
+  void camera_callback(const Image::ConstSharedPtr & msg,
+                       const CameraInfo::ConstSharedPtr & camera_info_msg);
+
+  /* Topic publishers */
+  rclcpp::Publisher<TargetArray>::SharedPtr target_array_pub_;
+  rclcpp::Publisher<VisualTargets>::SharedPtr visual_targets_pub_;
+
+  /* Theora stream publishers. */
+  std::shared_ptr<TheoraWrappers::Publisher> stream_pub_;
+
+  /* Service servers callback groups */
+  rclcpp::CallbackGroup::SharedPtr enable_cgroup_;
+
+  /* Service servers */
+  rclcpp::Service<SetBool>::SharedPtr enable_server_;
+
+  /* Service callbacks */
+  void enable_callback(
+    SetBool::Request::SharedPtr req,
+    SetBool::Response::SharedPtr resp);
+
+  /* Data buffers */
+  cv::Mat camera_frame_, new_frame_;
+  std_msgs::msg::Header last_header_;
+
+  /* Internal state variables */
+  cv::Mat cameraMatrix, distCoeffs, objPoints;
+  Inference detector;
+
+  /* Node parameters */
+  bool autostart_ = false;
+  bool best_effort_sub_qos_ = false;
+  std::vector<int64_t> image_dims_ = {};
+  int64_t image_sub_depth_ = 0;
+  std::string input_topic_ = "";
+  double model_score_threshold_ = 0.0;
+  double model_NMS_threshold_ = 0.0;
+  std::string onnx_path_ = "";
+  std::string output_topic_ = "";
+  std::string stream_topic_ = "";
+  std::string transport_ = "";
+  bool use_gpu_ = false;
+  std::string visual_data_topic_ = "";
+  int64_t worker_cpu_ = 0;
+
+  /* Synchronization primitives for internal update operations */
+  std::atomic<bool> running_{false};
+  sem_t sem1_, sem2_;
+
+  /* Threads */
+  std::thread worker_;
+
+  /* Utility routines */
+  void worker_thread_routine();
+  Image::SharedPtr frame_to_msg(cv::Mat & frame);
+};
+
+} // namespace ObjectDetector
+
+#endif // OBJECT_DETECTOR_HPP
