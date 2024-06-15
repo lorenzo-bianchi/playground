@@ -79,8 +79,7 @@ ObjectDetectorNode::~ObjectDetectorNode()
  */
 void ObjectDetectorNode::init_inference()
 {
-  cv::Size size = cv::Size(image_dims_[0], image_dims_[1]);
-  detector = Inference(onnx_path_, size, use_gpu_, &model_score_threshold_, &model_NMS_threshold_);
+  detector = Inference(onnx_path_, cv::Size(model_shape_[0], model_shape_[1]), use_gpu_, &model_score_threshold_, &model_NMS_threshold_);
 }
 
 /**
@@ -179,29 +178,27 @@ void ObjectDetectorNode::worker_thread_routine()
     std_msgs::msg::Header header_;
     cv::Mat image_{};
     sem_wait(&sem2_);
-    if (!running_.load(std::memory_order_acquire)) {
-      break;
-    }
+    if (!running_.load(std::memory_order_acquire)) { break; }
 
     image_ = new_frame_.clone();
     header_ = last_header_;
     sem_post(&sem1_);
 
     // Detect targets
-    std::vector<Detection> output = detector.runInference(image_);
+    std::vector<Detection> output = detector.run_inference(image_);
     int detections = output.size();
 
     // print output
-    for (int i = 0; i < detections; ++i)
+    for (int i = 0; i < detections; i++)
     {
       Detection detection = output[i];
       RCLCPP_INFO(this->get_logger(), "Detected %s at (%d, %d, %d, %d) with confidence %f",
-                  detection.className.c_str(), detection.box.x, detection.box.y,
+                  detection.class_name.c_str(), detection.box.x, detection.box.y,
                   detection.box.width, detection.box.height, detection.confidence);
     }
 
     // Return if no target is detected
-    if (detections == 0) {continue;}
+    if (detections == 0) { continue; }
 
     for (int i = 0; i < detections; ++i)
     {
@@ -209,17 +206,22 @@ void ObjectDetectorNode::worker_thread_routine()
 
       cv::Rect box = detection.box;
       cv::Scalar color = detection.color;
+      cv::Mat mask = detection.mask;
 
       // Detection box
       cv::rectangle(image_, box, color, 2);
 
-      // Detection box text
-      std::string classString = detection.className + ' ' + std::to_string(detection.confidence).substr(0, 4);
-      cv::Size textSize = cv::getTextSize(classString, cv::FONT_HERSHEY_DUPLEX, 1, 2, 0);
-      cv::Rect textBox(box.x, box.y - 40, textSize.width + 10, textSize.height + 20);
+      // Segmentation mask
+      if (mask.empty()) { continue; }
 
-      cv::rectangle(image_, textBox, color, cv::FILLED);
-      cv::putText(image_, classString, cv::Point(box.x + 5, box.y - 10), cv::FONT_HERSHEY_DUPLEX, 1, cv::Scalar(0, 0, 0), 2, 0);
+      cv::Mat mask_resized;
+      cv::resize(mask, mask_resized, box.size());
+
+      cv::Mat roi = image_(box);
+
+      mask_resized.convertTo(mask_resized, CV_8UC3, 255);
+      cvtColor(mask_resized, mask_resized, cv::COLOR_GRAY2BGR);
+      cv::addWeighted(roi, 1.0, mask_resized, 0.5, 0.0, roi);
     }
 
     camera_frame_ = image_; // Doesn't copy image data, but sets data type...

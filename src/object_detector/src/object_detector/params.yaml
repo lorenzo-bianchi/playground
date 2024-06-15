@@ -19,16 +19,16 @@ params:
     read_only: true
     var_name: best_effort_sub_qos_
 
-  image_dims:
+  model_shape:
     type: integer_array
     default_value: [0]
     min_value: 0
     max_value: 10000
     step: 1
-    description: "Image dimensions (width, height)."
+    description: "Model input dimensions."
     constraints: "Cannot be changed."
     read_only: true
-    var_name: image_dims_
+    var_name: model_shape_
 
   image_sub_depth:
     type: integer
