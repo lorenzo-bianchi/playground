@@ -196,15 +196,15 @@ std::vector<Detection> Inference::run_inference(cv::Mat& input)
 
     for (size_t i = 0; i < nms_result.size(); i++)
     {
-      int scale_x1 = (int) std::floor(boxes[i].x / x_factor_segm);
-      int scale_y1 = (int) std::floor(boxes[i].y / y_factor_segm);
-      int scale_x2 = (int) std::ceil((boxes[i].x + boxes[i].width) / x_factor_segm);
-      int scale_y2 = (int) std::ceil((boxes[i].y + boxes[i].height) / y_factor_segm);
-
       int x1 = (int) std::floor(boxes[i].x);
       int y1 = (int) std::floor(boxes[i].y);
       int x2 = (int) std::ceil(boxes[i].x + boxes[i].width);
       int y2 = (int) std::ceil(boxes[i].y + boxes[i].height);
+
+      int scale_x1 = x1 / x_factor_segm;
+      int scale_y1 = y1 / y_factor_segm;
+      int scale_x2 = x2 / x_factor_segm;
+      int scale_y2 = y2 / y_factor_segm;
 
       cv::Mat crop_mask = images[i].colRange(scale_x1, scale_x2).rowRange(scale_y1, scale_y2);
 
@@ -215,8 +215,7 @@ std::vector<Detection> Inference::run_inference(cv::Mat& input)
       cv::GaussianBlur(crop_mask, crop_mask, kernel_size, 0);
       cv::threshold(crop_mask, crop_mask, 0.5, 1, cv::THRESH_BINARY);
 
-      Detection& detection = detections[i];
-      detection.mask = crop_mask;
+      detections[i].mask = crop_mask;
     }
   }
 
