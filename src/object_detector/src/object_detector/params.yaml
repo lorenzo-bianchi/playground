@@ -71,6 +71,17 @@ params:
     read_only: false
     var_name: model_score_threshold_
 
+  objects_ids:
+    type: integer_array
+    default_value: [0]
+    min_value: 0
+    max_value: 100
+    step: 1
+    description: "COCO classes to be found."
+    constraints: "Cannot be changed."
+    read_only: true
+    var_name: objects_ids_
+
   onnx_path:
     type: string
     default_value: /

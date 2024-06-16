@@ -35,7 +35,7 @@ namespace ObjectDetector
  * @param frame cv::Mat storing the frame.
  * @return Shared pointer to a new Image message.
  */
-Image::SharedPtr ObjectDetectorNode::frame_to_msg(cv::Mat & frame)
+Image::SharedPtr ObjectDetectorNode::frame_to_msg(cv::Mat& frame)
 {
   auto ros_image = std::make_shared<Image>();
 
@@ -57,27 +57,51 @@ Image::SharedPtr ObjectDetectorNode::frame_to_msg(cv::Mat & frame)
   return ros_image;
 }
 
-/*  */
+/**
+ * @brief Inference class constructor.
+ *
+ * @param onnx_model_path string with model path.
+ * @param model_input_shape cv::Size with model input shape.
+ * @param run_with_cuda boolean to run with CUDA.
+ * @param score_threshold pointer to score threshold value.
+ * @param nms_threshold pointer to NMS threshold value.
+ * @param objects_ids vector of objects IDs to be found.
+ */
 Inference::Inference(std::string& onnx_model_path,
                      cv::Size model_input_shape,
                      bool run_with_cuda,
                      double* score_threshold,
-                     double* nms_threshold)
+                     double* nms_threshold,
+                     std::vector<int64_t>& objects_ids)
 {
   this->model_path = onnx_model_path;
   this->model_shape = model_input_shape;
   this->cuda_enabled = run_with_cuda;
   this->score_threshold = score_threshold;
   this->nms_threshold = nms_threshold;
+  this->objects_ids = objects_ids;
 
-  // TODO: remove
-  std::random_device rd;
-  gen = std::mt19937(rd());
-  dis = std::uniform_int_distribution<int>(100, 255);
+  // Create colors vector randomly
+  int seed = 1;
+  std::mt19937 gen = std::mt19937(seed);
+  std::uniform_int_distribution<int> dis = std::uniform_int_distribution<int>(100, 255);
+  for (size_t i = 0; i < classes.size(); i++)
+    colors.push_back(cv::Scalar(dis(gen), dis(gen), dis(gen)));
 
   load_onnx_network();
+
+  // Print classes names to be found
+  std::cout << "Objects to be found: " << std::endl;
+  for (int id : objects_ids)
+    std::cout << "\t- " << classes[id] << std::endl;
 }
 
+/**
+ * @brief Inference class main method to run inference on given image.
+ *
+ * @param input cv::Mat with input image.
+ * @return std::vector with Detection objects found in the image.
+ */
 std::vector<Detection> Inference::run_inference(cv::Mat& input)
 {
   cv::Mat image_input = input.clone();
@@ -95,8 +119,7 @@ std::vector<Detection> Inference::run_inference(cv::Mat& input)
   int boxes_rows = boxes_output.size[2];    // 6300
   int boxes_dims = boxes_output.size[1];    // 116
 
-  boxes_output = boxes_output.reshape(1, boxes_dims);
-  cv::transpose(boxes_output, boxes_output);
+  boxes_output = boxes_output.reshape(1, boxes_dims).t();
 
   float x_factor = image_input.cols / model_shape.width;
   float y_factor = image_input.rows / model_shape.height;
@@ -121,10 +144,10 @@ std::vector<Detection> Inference::run_inference(cv::Mat& input)
       indices.push_back(i);
 
       // limit values between 0 and image size
-      float x1 = std::max(std::min(data[0], (float) model_shape.width), 0.0f);
-      float y1 = std::max(std::min(data[1], (float) model_shape.height), 0.0f);
-      float x2 = std::max(std::min(data[2], (float) model_shape.width), 0.0f);
-      float y2 = std::max(std::min(data[3], (float) model_shape.height), 0.0f);
+      float x1 = std::max(std::min(data[0], model_shape.width), 0.0f);
+      float y1 = std::max(std::min(data[1], model_shape.height), 0.0f);
+      float x2 = std::max(std::min(data[2], model_shape.width), 0.0f);
+      float y2 = std::max(std::min(data[3], model_shape.height), 0.0f);
 
       int left = int(x1 * x_factor);
       int top = int(y1 * y_factor);
@@ -143,19 +166,19 @@ std::vector<Detection> Inference::run_inference(cv::Mat& input)
   cv::dnn::NMSBoxes(boxes, confidences, *score_threshold, *nms_threshold, nms_result);
   if (nms_result.empty()) return {};
 
-  std::vector<Detection> detections(nms_result.size());
-  for (size_t i = 0; i < nms_result.size(); i++)
+  size_t nms_result_size = nms_result.size();
+
+  std::vector<Detection> detections(nms_result_size);
+  for (size_t i = 0; i < nms_result_size; i++)
   {
     int idx = nms_result[i];
 
     Detection result;
-    result.class_id = class_ids[idx];
-    result.confidence = confidences[idx];
-
-    result.color = cv::Scalar(dis(gen), dis(gen), dis(gen));
-
-    result.class_name = classes[result.class_id];
     result.box = boxes[idx];
+    result.class_id = class_ids[idx];
+    result.class_name = classes[result.class_id];
+    result.color = colors[result.class_id];
+    result.confidence = confidences[idx];
 
     detections[i] = result;
   }
@@ -172,34 +195,34 @@ std::vector<Detection> Inference::run_inference(cv::Mat& input)
     float y_factor_segm = y_factor * model_shape.height / mask_height;
 
     data = (float*) boxes_output.data;
-    cv::Mat masks_prediction(0, mask_proto, CV_32FC1);
+    cv::Mat masks_prediction(mask_proto, 0, CV_32FC1);
     for (int idx : nms_result)
     {
-      cv::Mat masks_temp(1, mask_proto, CV_32FC1, data + indices[idx] * boxes_dims + 4 + classes.size());
-      cv::vconcat(masks_prediction, masks_temp, masks_prediction);
+      cv::Mat masks_temp(mask_proto, 1, CV_32FC1, data + indices[idx] * boxes_dims + 4 + classes.size());
+      cv::hconcat(masks_prediction, masks_temp, masks_prediction);
     }
-    cv::transpose(masks_prediction, masks_prediction);
 
-    masks_output = masks_output.reshape(1, {mask_proto, mask_height*mask_width});
-    cv::transpose(masks_output, masks_output);
+    masks_output = masks_output.reshape(1, {mask_proto, mask_height*mask_width}).t();
 
     cv::gemm(masks_output, masks_prediction, 1, cv::noArray(), 0, masks_output);
 
-    // compute sigmoid of masks_output
+    // Compute sigmoid of masks_output
     cv::exp(-masks_output, masks_output);
     cv::add(1.0, masks_output, masks_output);
     cv::divide(1.0, masks_output, masks_output);
 
-    masks_output = masks_output.reshape((int) nms_result.size(), {mask_height, mask_width});
-    std::vector<cv::Mat> images((int) nms_result.size());
+    masks_output = masks_output.reshape((int) nms_result_size, {mask_height, mask_width});
+    std::vector<cv::Mat> images((int) nms_result_size);
     cv::split(masks_output, images);
 
-    for (size_t i = 0; i < nms_result.size(); i++)
+    for (size_t i = 0; i < nms_result_size; i++)
     {
-      int x1 = (int) std::floor(boxes[i].x);
-      int y1 = (int) std::floor(boxes[i].y);
-      int x2 = (int) std::ceil(boxes[i].x + boxes[i].width);
-      int y2 = (int) std::ceil(boxes[i].y + boxes[i].height);
+      int idx = nms_result[i];
+
+      int x1 = (int) std::floor(boxes[idx].x);
+      int y1 = (int) std::floor(boxes[idx].y);
+      int x2 = (int) std::ceil(boxes[idx].x + boxes[idx].width);
+      int y2 = (int) std::ceil(boxes[idx].y + boxes[idx].height);
 
       int scale_x1 = x1 / x_factor_segm;
       int scale_y1 = y1 / y_factor_segm;
@@ -222,6 +245,9 @@ std::vector<Detection> Inference::run_inference(cv::Mat& input)
   return detections;
 }
 
+/**
+ * @brief Load ONNX network from file.
+ */
 void Inference::load_onnx_network()
 {
   net = cv::dnn::readNetFromONNX(model_path);

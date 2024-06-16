@@ -79,7 +79,12 @@ ObjectDetectorNode::~ObjectDetectorNode()
  */
 void ObjectDetectorNode::init_inference()
 {
-  detector = Inference(onnx_path_, cv::Size(model_shape_[0], model_shape_[1]), use_gpu_, &model_score_threshold_, &model_NMS_threshold_);
+  detector = Inference(onnx_path_,
+                       cv::Size(model_shape_[0], model_shape_[1]),
+                       use_gpu_,
+                       &model_score_threshold_,
+                       &model_NMS_threshold_,
+                       objects_ids_);
 }
 
 /**
@@ -175,60 +180,52 @@ void ObjectDetectorNode::worker_thread_routine()
 {
   while (true) {
     // Get new data
-    std_msgs::msg::Header header_;
-    cv::Mat image_{};
+    std_msgs::msg::Header header;
+    cv::Mat image{};
     sem_wait(&sem2_);
     if (!running_.load(std::memory_order_acquire)) { break; }
-
-    image_ = new_frame_.clone();
-    header_ = last_header_;
+    image = new_frame_.clone();
+    header = last_header_;
     sem_post(&sem1_);
 
     // Detect targets
-    std::vector<Detection> output = detector.run_inference(image_);
+    std::vector<Detection> output = detector.run_inference(image);
     int detections = output.size();
-
-    // print output
-    for (int i = 0; i < detections; i++)
-    {
-      Detection detection = output[i];
-      RCLCPP_INFO(this->get_logger(), "Detected %s at (%d, %d, %d, %d) with confidence %f",
-                  detection.class_name.c_str(), detection.box.x, detection.box.y,
-                  detection.box.width, detection.box.height, detection.confidence);
-    }
 
     // Return if no target is detected
     if (detections == 0) { continue; }
 
-    for (int i = 0; i < detections; ++i)
+    for (int i = 0; i < detections; i++)
     {
       Detection detection = output[i];
+
+      RCLCPP_INFO(this->get_logger(), "Detected %s at (%d, %d, %d, %d) with confidence %f",
+                  detection.class_name.c_str(), detection.box.x, detection.box.y,
+                  detection.box.width, detection.box.height, detection.confidence);
 
       cv::Rect box = detection.box;
       cv::Scalar color = detection.color;
       cv::Mat mask = detection.mask;
 
       // Detection box
-      cv::rectangle(image_, box, color, 2);
+      cv::rectangle(image, box, color, 2);
 
       // Segmentation mask
       if (mask.empty()) { continue; }
 
-      cv::Mat mask_resized;
-      cv::resize(mask, mask_resized, box.size());
+      cv::resize(mask, mask, box.size());
+      mask.convertTo(mask, CV_8UC3, 255);
+      cvtColor(mask, mask, cv::COLOR_GRAY2BGR);
 
-      cv::Mat roi = image_(box);
-
-      mask_resized.convertTo(mask_resized, CV_8UC3, 255);
-      cvtColor(mask_resized, mask_resized, cv::COLOR_GRAY2BGR);
-      cv::addWeighted(roi, 1.0, mask_resized, 0.5, 0.0, roi);
+      cv::Mat roi = image(box);
+      cv::addWeighted(roi, 1.0, mask, 0.3, 0.0, roi);
     }
 
-    camera_frame_ = image_; // Doesn't copy image data, but sets data type...
+    camera_frame_ = image; // doesn't copy image data, but sets data type...
 
     // Create processed image message
     Image::SharedPtr processed_image_msg = frame_to_msg(camera_frame_);
-    processed_image_msg->set__header(header_);
+    processed_image_msg->set__header(header);
 
     // Publish processed image
     stream_pub_->publish(processed_image_msg);

@@ -78,11 +78,11 @@ namespace ObjectDetector
 
 struct Detection
 {
+  cv::Rect box{};
   int class_id{0};
   std::string class_name{};
-  float confidence{0.0};
   cv::Scalar color{};
-  cv::Rect box{};
+  float confidence{0.0};
   cv::Mat mask{};
 };
 
@@ -90,7 +90,12 @@ class Inference
 {
 public:
   Inference() = default;
-  Inference(std::string &onnx_model_path, cv::Size model_input_shape, bool run_with_cuda, double* score_threshold, double* nms_threshold);
+  Inference(std::string &onnx_model_path,
+            cv::Size model_input_shape,
+            bool run_with_cuda,
+            double* score_threshold,
+            double* nms_threshold,
+            std::vector<int64_t>& objects_ids_);
   std::vector<Detection> run_inference(cv::Mat &input);
 
 private:
@@ -100,6 +105,9 @@ private:
   std::string model_path;
   std::string classes_path;
   bool cuda_enabled;
+  std::vector<int64_t> objects_ids;
+
+  std::vector<cv::Scalar> colors;
 
   std::vector<std::string> classes{"person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
 
@@ -107,9 +115,6 @@ private:
 
   double* score_threshold;
   double* nms_threshold;
-
-  std::mt19937 gen;
-  std::uniform_int_distribution<int> dis;
 };
 
 /**
@@ -170,6 +175,7 @@ private:
   std::string input_topic_ = "";
   double model_score_threshold_ = 0.0;
   double model_NMS_threshold_ = 0.0;
+  std::vector<int64_t> objects_ids_ = {};
   std::string onnx_path_ = "";
   std::string output_topic_ = "";
   std::string stream_topic_ = "";
